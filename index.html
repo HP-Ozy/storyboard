@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Storyboard</title>
+<style>
+  body { margin: 0; background: #000; color: #eee; font: 14px system-ui; }
+  header { position: sticky; top: 0; z-index: 2; padding: 10px; background: #111; display: flex; gap: 8px; }
+  #board { position: relative; width: 6000px; height: 4000px; }
+  #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .scene { position: absolute; width: 260px; display: flex; flex-direction: column; gap: 6px; background: #000; cursor: grab; user-select: none; }
+  .scene img { width: 100%; border: 1px solid #333; pointer-events: none; }
+  .scene textarea { background: #111; color: #eee; border: 1px solid #333; min-height: 60px; resize: vertical; cursor: text; }
+  .tools { display: flex; gap: 4px; }
+  button, label { background: #222; color: #eee; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
+  input[type=file] { display: none; }
+  #print { display: none; }
+  @media print {
+    body { background: #fff; color: #000; }
+    header, #board { display: none; }
+    #print { display: block; }
+    #print section { break-inside: avoid; margin-bottom: 24px; }
+    #print img { max-width: 100%; max-height: 60vh; }
+    #print p { white-space: pre-wrap; }
+  }
+</style>
+<header>
+  <label>+ Immagini<input id="add" type="file" accept="image/*" multiple></label>
+  <button id="save">Salva</button>
+  <label>Apri<input id="open" type="file" accept=".json"></label>
+  <button onclick="print()">Esporta PDF per IA</button>
+</header>
+<div id="print"></div>
+<div id="board">
+  <svg id="links"><defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs><g></g></svg>
+</div>
+<script>
+let scenes = [];
+const board = document.getElementById('board');
+const links = document.querySelector('#links g');
+
+function drawLinks() {
+  const els = [...board.querySelectorAll('.scene')];
+  const c = el => [el.offsetLeft + el.offsetWidth / 2, el.offsetTop + el.offsetHeight / 2];
+  links.innerHTML = els.slice(1).map((el, i) => {
+    const [x1, y1] = c(els[i]), [x2, y2] = c(el);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>`;
+  }).join('');
+}
+
+function render() {
+  board.querySelectorAll('.scene').forEach(e => e.remove());
+  scenes.forEach((s, i) => {
+    s.x ??= 20 + (i % 5) * 300;
+    s.y ??= 20 + Math.floor(i / 5) * 360;
+    const el = document.createElement('div');
+    el.className = 'scene';
+    el.style.left = s.x + 'px';
+    el.style.top = s.y + 'px';
+    el.innerHTML = `<b>Scena ${i + 1}</b><img><textarea placeholder="Commento..."></textarea>
+      <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-d>✕</button></div>`;
+    el.querySelector('img').src = s.img;
+    el.querySelector('img').onload = drawLinks;
+    const ta = el.querySelector('textarea');
+    ta.value = s.text;
+    ta.oninput = () => s.text = ta.value;
+    new ResizeObserver(drawLinks).observe(ta);
+    el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+      const j = i + +b.dataset.m;
+      if (j < 0 || j >= scenes.length) return;
+      [scenes[i], scenes[j]] = [scenes[j], scenes[i]];
+      render();
+    });
+    el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); render(); };
+    el.onpointerdown = e => {
+      if (e.target.closest('textarea, button')) return;
+      const dx = e.clientX - s.x, dy = e.clientY - s.y;
+      el.setPointerCapture(e.pointerId);
+      el.style.zIndex = 1;
+      el.onpointermove = m => {
+        s.x = Math.max(0, m.clientX - dx);
+        s.y = Math.max(0, m.clientY - dy);
+        el.style.left = s.x + 'px';
+        el.style.top = s.y + 'px';
+        drawLinks();
+      };
+      el.onpointerup = () => { el.onpointermove = null; el.style.zIndex = ''; };
+    };
+    board.append(el);
+  });
+  drawLinks();
+}
+
+const readAs = (f, how) => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr[how](f); });
+
+document.getElementById('add').onchange = async e => {
+  const files = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  for (const f of files) scenes.push({ img: await readAs(f, 'readAsDataURL'), text: '' });
+  e.target.value = '';
+  render();
+};
+
+document.getElementById('save').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(scenes)], { type: 'application/json' }));
+  a.download = 'storyboard.json';
+  a.click();
+};
+
+document.getElementById('open').onchange = async e => {
+  scenes = JSON.parse(await readAs(e.target.files[0], 'readAsText'));
+  e.target.value = '';
+  render();
+};
+
+onbeforeprint = () => {
+  const p = document.getElementById('print');
+  p.innerHTML = '<h1>Storyboard</h1>';
+  scenes.forEach((s, i) => {
+    const sec = document.createElement('section');
+    sec.innerHTML = `<h2>Scena ${i + 1} di ${scenes.length}</h2><img><p></p>`;
+    sec.querySelector('img').src = s.img;
+    sec.querySelector('p').textContent = s.text || '(nessun commento)';
+    p.append(sec);
+  });
+};
+
+onbeforeunload =() => scenes.length ? true : undefined;
+</script>
