@@ -12,14 +12,14 @@
   .tools { display: flex; gap: 4px; }
   button, label { background: #222; color: #eee; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
   input[type=file] { display: none; }
-  #print { display: none; }
+  @page { size: A4 landscape; margin: 10mm; }
   @media print {
-    body { background: #fff; color: #000; }
-    header, #board { display: none; }
-    #print { display: block; }
-    #print section { break-inside: avoid; margin-bottom: 24px; }
-    #print img { max-width: 100%; max-height: 60vh; }
-    #print p { white-space: pre-wrap; }
+    body, .scene { background: #fff; color: #000; }
+    header { display: none; }
+    .tools { visibility: hidden; }
+    .scene textarea { background: #fff; color: #000; resize: none; overflow: hidden; }
+    #board { transform-origin: 0 0; }
+    #links { overflow: visible; }
   }
 </style>
 <header>
@@ -28,7 +28,6 @@
   <label>Apri<input id="open" type="file" accept=".json"></label>
   <button onclick="print()">Esporta PDF per IA</button>
 </header>
-<div id="print"></div>
 <div id="board">
   <svg id="links"><defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs><g></g></svg>
 </div>
@@ -111,17 +110,22 @@ document.getElementById('open').onchange = async e => {
   render();
 };
 
+let undoPrint;
 onbeforeprint = () => {
-  const p = document.getElementById('print');
-  p.innerHTML = '<h1>Storyboard</h1>';
-  scenes.forEach((s, i) => {
-    const sec = document.createElement('section');
-    sec.innerHTML = `<h2>Scena ${i + 1} di ${scenes.length}</h2><img><p></p>`;
-    sec.querySelector('img').src = s.img;
-    sec.querySelector('p').textContent = s.text || '(nessun commento)';
-    p.append(sec);
-  });
+  const els = [...board.querySelectorAll('.scene')];
+  if (!els.length) return;
+  const tas = els.map(e => e.querySelector('textarea'));
+  const hs = tas.map(t => t.style.height);
+  tas.forEach(t => t.style.height = t.scrollHeight + 'px');
+  drawLinks();
+  const x0 = Math.min(...els.map(e => e.offsetLeft)), y0 = Math.min(...els.map(e => e.offsetTop));
+  const w = Math.max(...els.map(e => e.offsetLeft + e.offsetWidth)) - x0;
+  const h = Math.max(...els.map(e => e.offsetTop + e.offsetHeight)) - y0;
+  const k = Math.min(1, 1040 / w, 700 / h);
+  Object.assign(board.style, { width: w * k + 'px', height: h * k + 'px', transform: `scale(${k}) translate(${-x0}px, ${-y0}px)` });
+  undoPrint = () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); drawLinks(); };
 };
+onafterprint = () => { undoPrint?.(); undoPrint = null; };
 
 onbeforeunload =() => scenes.length ? true : undefined;
 </script>
