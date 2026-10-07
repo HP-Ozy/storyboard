@@ -5,7 +5,7 @@ import { deleteProject, listProjects, projectDir, readProject, Scene, writeProje
 
 let win: BrowserWindow;
 
-const archive = () => path.join(app.isPackaged ? path.dirname(process.execPath) : app.getAppPath(), 'archivio');
+const archive = () => path.join(app.isPackaged ? path.dirname(process.env.APPIMAGE ?? process.execPath) : app.getAppPath(), 'archivio');
 
 app.whenReady().then(() => {
   win = new BrowserWindow({ width: 1400, height: 900, autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js') } });

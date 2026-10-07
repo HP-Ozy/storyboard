@@ -30,7 +30,7 @@ import { deleteProject, listProjects, projectDir, readProject, writeProject } fr
   await writeProject(projectDir(root, 'Spot caffè'), scenes);
   await writeProject(projectDir(root, 'Schema 2'), scenes.slice(0, 1));
   assert.deepEqual((await listProjects(root)).map(p => [p.name, p.scenes]).sort(), [['Schema 2', 1], ['Spot caffè', 3]]);
-  for (const bad of ['', '.', '..', '../x', 'a/b', 'a\\b', 'x.', 'c:']) assert.throws(() => projectDir(root, bad));
+  for (const bad of ['', '.', '..', '../x', 'a/b', 'a\\b', 'x.', 'c:', 'CON', 'nul.txt']) assert.throws(() => projectDir(root, bad));
   await deleteProject(root, 'Spot caffè');
   assert.deepEqual((await listProjects(root)).map(p => p.name), ['Schema 2']);
 

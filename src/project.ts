@@ -10,7 +10,7 @@ const mimeOf: Record<string, string> = Object.fromEntries(Object.entries(extOf).
 const ownImage = /^[0-9a-f]{16}\.\w+$/;
 
 export function projectDir(root: string, name: string) {
-  if (!/^[^<>:"/\\|?*\x00-\x1f]+$/.test(name) || /^\.|[. ]$/.test(name)) throw new Error(`Nome non valido: "${name}"`);
+  if (!/^[^<>:"/\\|?*\x00-\x1f]+$/.test(name) || /^\.|[. ]$|^(con|prn|aux|nul|com\d|lpt\d)(\.|$)/i.test(name)) throw new Error(`Nome non valido: "${name}"`);
   return path.join(root, name);
 }
 
