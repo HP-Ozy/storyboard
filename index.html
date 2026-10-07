@@ -11,16 +11,22 @@
   #links circle { fill: #4af; pointer-events: all; cursor: move; }
   #links circle.del { fill: #d33; cursor: pointer; }
   .scene { position: absolute; width: 260px; display: flex; flex-direction: column; gap: 6px; background: #000; cursor: grab; user-select: none; }
-  .scene img { width: 100%; border: 1px solid #333; pointer-events: none; }
-  .scene textarea { background: #111; color: #eee; border: 1px solid #333; min-height: 60px; resize: vertical; cursor: text; }
+  .scene img { width: 100%; border: 1px solid #333; border-radius: 8px; pointer-events: none; }
+  .scene textarea { background: #111; color: #eee; border: 1px solid #333; min-height: 60px; resize: vertical; cursor: text; border-radius: 8px; padding: 6px; }
   .tools { display: flex; gap: 4px; }
-  button, label { background: #222; color: #eee; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
+  button, label { background: #222; color: #eee; border: 1px solid #444; padding: 5px 12px; cursor: pointer; border-radius: 8px; }
+  button:hover, label:hover { background: #2c2c2c; }
   input[type=file] { display: none; }
-  dialog { background: #111; color: #eee; border: 1px solid #444; min-width: 480px; }
+  dialog { background: #111; color: #eee; border: 1px solid #444; min-width: 480px; border-radius: 14px; padding: 18px; }
+  dialog::backdrop { background: #0008; }
   #list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; max-height: 60vh; overflow: auto; }
   #list div { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
   #list button:first-child { text-align: left; }
-  #name { background: #222; color: #eee; border: 1px solid #444; padding: 4px 8px; }
+  #name { background: #222; color: #eee; border: 1px solid #444; padding: 5px 10px; border-radius: 8px; }
+  #cur { margin-left: auto; align-self: center; padding: 4px 14px; border-radius: 999px; background: #222; color: #999; border: 1px solid #333; }
+  #cur.on { background: #12263a; color: #cfe6ff; border-color: #2a5a8a; }
+  #cur.on::before { content: '●'; color: #4af; margin-right: 8px; }
+  #list .cur button:first-child { border-color: #4af; color: #cfe6ff; }
   #where { color: #888; }
   @media print {
     body, .scene { background: #fff; color: #000; overflow: hidden; }
@@ -38,6 +44,7 @@
   <button id="new">Nuovo</button>
   <button id="arch">Archivio</button>
   <button id="pdf">Esporta PDF per IA</button>
+  <span id="cur">Nuovo progetto · non salvato</span>
 </header>
 <dialog id="archive"><b>Archivio progetti</b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()">Chiudi</button></dialog>
 <div id="board">
@@ -171,6 +178,13 @@ const fromFile = list => {
 };
 
 let current = '';
+const setCurrent = n => {
+  current = n;
+  const cur = document.getElementById('cur');
+  cur.className = n ? 'on' : '';
+  cur.textContent = n ? `Stai lavorando su: ${n}` : 'Nuovo progetto · non salvato';
+  document.title = n ? `${n} — Storyboard` : 'Storyboard';
+};
 const nameEl = document.getElementById('name');
 const saveBtn = document.getElementById('save');
 const discard = () => !dirty || confirm('Ci sono modifiche non salvate. Continuare?');
@@ -183,7 +197,7 @@ saveBtn.onclick = async () => {
     const same = n => n.toLowerCase() === name.toLowerCase();
     if (!same(current) && (await api.list()).some(p => same(p.name)) && !confirm(`"${name}" esiste già nell'archivio. Sovrascrivere?`)) return;
     await api.save(name, toFile());
-    current = nameEl.value = name;
+    setCurrent(nameEl.value = name);
     dirty = false;
     saveBtn.textContent = 'Salvato ✓';
     setTimeout(() => saveBtn.textContent = 'Salva', 1500);
@@ -191,7 +205,7 @@ saveBtn.onclick = async () => {
 };
 
 document.getElementById('new').onclick = () => {
-  if (discard()) { load([]); current = nameEl.value = ''; }
+  if (discard()) { load([]); setCurrent(nameEl.value = ''); }
 };
 
 async function showArchive() {
@@ -202,13 +216,14 @@ async function showArchive() {
   for (const p of items) {
     const row = document.createElement('div');
     row.innerHTML = '<button></button><span></span><button>Elimina</button>';
+    if (p.name === current) row.className = 'cur';
     const [open, info, del] = row.children;
     open.textContent = p.name;
     info.textContent = `${p.scenes} scene · ${new Date(p.date).toLocaleString()}`;
-    open.onclick = () => { if (discard()) api.load(p.name).then(s => { load(s); current = nameEl.value = p.name; archive.close(); }).catch(fail); };
+    open.onclick = () => { if (discard()) api.load(p.name).then(s => { load(s); setCurrent(nameEl.value = p.name); archive.close(); }).catch(fail); };
     del.onclick = () => {
       if (!confirm(`Eliminare definitivamente "${p.name}"?`)) return;
-      api.remove(p.name).then(() => { if (p.name === current) { current = ''; dirty = true; } showArchive(); }).catch(fail);
+      api.remove(p.name).then(() => { if (p.name === current) { setCurrent(''); dirty = true; } showArchive(); }).catch(fail);
     };
     list.append(row);
   }
