@@ -6,21 +6,25 @@ import { deleteProject, listProjects, projectDir, readProject, writeProject } fr
 
 (async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'storyboard-'));
-  const img = (mime: string, data: string) => `data:image/${mime};base64,${Buffer.from(data).toString('base64')}`;
+  const img = (mime: string, data: string, kind = 'image') => `data:${kind}/${mime};base64,${Buffer.from(data).toString('base64')}`;
   await mkdir(path.join(dir, 'images'));
   await writeFile(path.join(dir, 'images', 'foto.jpg'), 'utente');
 
   const scenes = [
-    { img: img('png', 'a'), text: 'uno', x: 10, y: 20, links: [{ to: 1 }, { to: 2, bx: 30, by: -15 }] },
-    { img: img('jpeg', 'b'), text: 'due\nriga', x: 300, y: 40, links: [{ to: 2 }] },
-    { img: img('png', 'a'), text: 'tre', x: 1, y: 2, links: [] },
+    { img: img('png', 'a'), text: 'uno', sound: 'pioggia, synth cupo', audio: img('mpeg', 'm', 'audio'), x: 10, y: 20, links: [{ to: 1 }, { to: 2, bx: 30, by: -15 }] },
+    { img: img('jpeg', 'b'), text: 'due\nriga', sound: '', x: 300, y: 40, links: [{ to: 2 }] },
+    { img: img('png', 'a'), text: 'tre', sound: '', audio: img('wav', 'w', 'audio'), x: 1, y: 2, links: [] },
   ];
   await writeProject(dir, scenes);
   assert.deepEqual(await readProject(dir), scenes);
   assert.equal((await readdir(path.join(dir, 'images'))).length, 3);
+  assert.equal((await readdir(path.join(dir, 'audio'))).length, 2);
+  await assert.rejects(writeProject(dir, [{ img: img('png', 'a'), text: '', audio: img('png', 'a') }]));
+  await writeProject(dir, scenes);
 
   await writeProject(dir, scenes.slice(1, 2));
   assert.deepEqual(await readProject(dir), scenes.slice(1, 2));
+  assert.equal((await readdir(path.join(dir, 'audio'))).length, 0);
   const left = await readdir(path.join(dir, 'images'));
   assert.equal(left.length, 2);
   assert.ok(left.includes('foto.jpg'));

@@ -14,6 +14,10 @@
   .scene img { width: 100%; border: 1px solid #333; border-radius: 8px; pointer-events: none; }
   .scene textarea { background: #111; color: #eee; border: 1px solid #333; min-height: 60px; resize: vertical; cursor: text; border-radius: 8px; padding: 6px; }
   .tools { display: flex; gap: 4px; }
+  .sound { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid #2a3a4a; border-radius: 8px; background: #0b1520; }
+  .sound textarea { min-height: 40px; }
+  .sound audio { width: 100%; height: 32px; }
+  .sound div { display: flex; gap: 4px; }
   button, label { background: #222; color: #eee; border: 1px solid #444; padding: 5px 12px; cursor: pointer; border-radius: 8px; }
   button:hover, label:hover { background: #2c2c2c; }
   input[type=file] { display: none; }
@@ -32,7 +36,10 @@
   @media print {
     body, .scene { background: #fff; color: #000; overflow: hidden; }
     header { display: none; }
-    .tools { visibility: hidden; }
+    .tools, .sound audio, .sound div { display: none; }
+    .sound { background: #fff; border-color: #999; }
+    .sound:has(.snd:placeholder-shown):not(:has(audio[src])) { display: none; }
+    .sound:has(audio[src])::after { content: 'Traccia musicale allegata'; font-style: italic; }
     .scene textarea { background: #fff; color: #000; resize: none; overflow: hidden; }
     #board { transform-origin: 0 0; width: var(--w); height: var(--h); transform: translate(var(--tx), var(--ty)); }
     #links { overflow: visible; }
@@ -117,13 +124,22 @@ function render() {
     el.style.top = s.y + 'px';
     el.dataset.i = i;
     el.innerHTML = `<b>Scena ${i + 1}</b><img><textarea placeholder="Commento..."></textarea>
+      <div class="sound"><b>🎵 Audio</b><textarea class="snd" placeholder="Genere, atmosfera, effetti sonori..."></textarea><audio controls></audio>
+        <div><label>Allega traccia<input type="file" accept="audio/*"></label><button data-r title="Rimuovi traccia">✕</button></div></div>
       <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-a title="Trascina su un'altra scena per collegarla">↗</button><button data-d>✕</button></div>`;
     el.querySelector('img').src = s.img;
     el.querySelector('img').onload = () => drawLinks();
+    const snd = el.querySelector('.snd'), au = el.querySelector('audio'), rm = el.querySelector('[data-r]');
+    snd.value = s.sound ?? '';
+    snd.oninput = () => { s.sound = snd.value; dirty = true; };
+    if (s.audio) au.src = s.audio;
+    au.hidden = rm.hidden = !s.audio;
+    el.querySelector('.sound input').onchange = async e => { s.audio = await readAs(e.target.files[0], 'readAsDataURL'); dirty = true; render(); };
+    rm.onclick = () => { delete s.audio; dirty = true; render(); };
     const ta = el.querySelector('textarea');
     ta.value = s.text;
     ta.oninput = () => { s.text = ta.value; dirty = true; };
-    new ResizeObserver(() => drawLinks()).observe(ta);
+    new ResizeObserver(() => drawLinks()).observe(el);
     el.querySelector('[data-a]').onpointerdown = e => {
       e.stopPropagation();
       drag(m => { const a = box(s), q = pt(m); drawLinks([a.x, a.y, q.x, q.y]); },
@@ -138,7 +154,7 @@ function render() {
     });
     el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); scenes.forEach(o => o.links = o.links.filter(l => l.to !== s)); sel = null; dirty = true; render(); };
     el.onpointerdown = e => {
-      if (e.target.closest('textarea, button')) return;
+      if (e.target.closest('textarea, button, label, audio')) return;
       const dx = e.clientX - s.x, dy = e.clientY - s.y;
       el.setPointerCapture(e.pointerId);
       el.style.zIndex = 1;
@@ -162,7 +178,7 @@ const readAs = (f, how) => new Promise(r => { const fr = new FileReader(); fr.on
 document.getElementById('add').onchange = async e => {
   const files = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   for (const f of files) {
-    const s = { img: await readAs(f, 'readAsDataURL'), text: '', links: [] };
+    const s = { img: await readAs(f, 'readAsDataURL'), text: '', sound: '', links: [] };
     scenes.at(-1)?.links.push({ to: s });
     scenes.push(s);
   }
@@ -236,7 +252,7 @@ document.getElementById('arch').onclick = () => showArchive().catch(fail);
 function preparePrint() {
   const els = [...board.querySelectorAll('.scene')];
   if (!els.length) return null;
-  const tas = els.map(e => e.querySelector('textarea'));
+  const tas = [...board.querySelectorAll('textarea')];
   const hs = tas.map(t => t.style.height);
   tas.forEach(t => t.style.height = t.scrollHeight + 'px');
   sel = null;
