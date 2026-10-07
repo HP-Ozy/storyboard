@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('api', {
   load: (name: string) => ipcRenderer.invoke('load', name),
   remove: (name: string) => ipcRenderer.invoke('remove', name),
   folder: () => ipcRenderer.invoke('folder'),
-  pdf: (w: number, h: number) => ipcRenderer.invoke('pdf', w, h),
+  exportFile: (name: string, project: string) => ipcRenderer.invoke('export', name, project),
+  pdf: (w: number, h: number, project: string) => ipcRenderer.invoke('pdf', w, h, project),
 });

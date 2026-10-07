@@ -28,6 +28,7 @@
   #cur.on::before { content: '●'; color: #4af; margin-right: 8px; }
   #list .cur button:first-child { border-color: #4af; color: #cfe6ff; }
   #where { color: #888; }
+  body.drop::after { content: 'Rilascia il file per aprire il progetto'; position: fixed; inset: 12px; z-index: 9; display: grid; place-items: center; border: 3px dashed #4af; border-radius: 14px; background: #0a1a2acc; color: #cfe6ff; font-size: 22px; pointer-events: none; }
   @media print {
     body, .scene { background: #fff; color: #000; overflow: hidden; }
     header { display: none; }
@@ -43,6 +44,7 @@
   <button id="save">Salva</button>
   <button id="new">Nuovo</button>
   <button id="arch">Archivio</button>
+  <button id="exp">Esporta .storyboard</button>
   <button id="pdf">Esporta PDF per IA</button>
   <span id="cur">Nuovo progetto · non salvato</span>
 </header>
@@ -248,10 +250,35 @@ function preparePrint() {
   return { w, h, undo: () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); drawLinks(); } };
 }
 
+const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, scenes: toFile() });
+document.getElementById('exp').onclick = () => api.exportFile(nameEl.value.trim() || current, payload()).catch(fail);
+
 document.getElementById('pdf').onclick = () => {
   const page = preparePrint();
   if (!page) return alert('Nessuna scena da esportare.');
-  api.pdf(page.w, page.h).catch(fail).finally(page.undo);
+  api.pdf(page.w, page.h, payload()).catch(fail).finally(page.undo);
+};
+
+ondragover = e => { e.preventDefault(); document.body.classList.add('drop'); };
+ondragleave = e => { if (!e.relatedTarget) document.body.classList.remove('drop'); };
+ondrop = async e => {
+  e.preventDefault();
+  document.body.classList.remove('drop');
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const text = await f.text();
+  const at = text.lastIndexOf('\n%STORYBOARD ');
+  const json = f.name.endsWith('.storyboard') ? text : at < 0 ? null : text.slice(at + 13);
+  if (!json) { alert('Questo PDF è stato esportato con una versione precedente e contiene solo il disegno, non i dati del progetto. Scegli il progetto dall\'archivio e riesportalo.'); return showArchive().catch(fail); }
+  if (!discard()) return;
+  try {
+    const p = JSON.parse(json);
+    const saved = p.name && (await api.list()).some(x => x.name === p.name);
+    load(saved ? await api.load(p.name) : p.scenes);
+    setCurrent(saved ? p.name : '');
+    nameEl.value = p.name ?? '';
+    dirty = !saved;
+  } catch (err) { fail(err); }
 };
 
 onbeforeunload = () => dirty ? true : undefined;

@@ -24,7 +24,14 @@ ipcMain.handle('load', (_e, name: string) => readProject(projectDir(archive(), n
 ipcMain.handle('remove', (_e, name: string) => deleteProject(archive(), name));
 ipcMain.handle('folder', () => archive());
 
-ipcMain.handle('pdf', async (_e, w: number, h: number) => {
+ipcMain.handle('export', async (_e, name: string, project: string) => {
+  const { filePath } = await dialog.showSaveDialog(win, { defaultPath: `${name || 'progetto'}.storyboard`, filters: [{ name: 'Storyboard', extensions: ['storyboard'] }] });
+  if (filePath) await fs.writeFile(filePath, project);
+});
+
+ipcMain.handle('pdf', async (_e, w: number, h: number, project: string) => {
   const { filePath } = await dialog.showSaveDialog(win, { defaultPath: 'storyboard.pdf', filters: [{ name: 'PDF', extensions: ['pdf'] }] });
-  if (filePath) await fs.writeFile(filePath, await win.webContents.printToPDF({ pageSize: { width: w / 96, height: h / 96 }, margins: { top: 0, bottom: 0, left: 0, right: 0 } }));
+  if (!filePath) return;
+  await fs.writeFile(filePath, await win.webContents.printToPDF({ pageSize: { width: w / 96, height: h / 96 }, margins: { top: 0, bottom: 0, left: 0, right: 0 } }));
+  await fs.appendFile(filePath, `\n%STORYBOARD ${project}\n`);
 });
