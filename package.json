@@ -1,0 +1,38 @@
+{
+  "name": "storyboard",
+  "version": "0.1.0",
+  "description": "Piano per disporre scene con immagini e commenti ed esportarle in PDF",
+  "author": "HP-Ozy",
+  "private": true,
+  "main": "out/main.js",
+  "scripts": {
+    "start": "tsc && electron .",
+    "test": "tsc && node out/project.test.js",
+    "dist": "tsc && electron-builder"
+  },
+  "build": {
+    "appId": "com.hpozy.storyboard",
+    "productName": "Storyboard",
+    "files": [
+      "out/**/*.js",
+      "!out/**/*.test.js",
+      "index.html"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Graphics"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "electron": "^44.6.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^7.0.2"
+  }
+}

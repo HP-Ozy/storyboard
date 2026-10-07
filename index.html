@@ -1,49 +1,101 @@
 <!doctype html>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
 <title>Storyboard</title>
 <style>
   body { margin: 0; background: #000; color: #eee; font: 14px system-ui; }
   header { position: sticky; top: 0; z-index: 2; padding: 10px; background: #111; display: flex; gap: 8px; }
   #board { position: relative; width: 6000px; height: 4000px; }
   #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #links .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+  #links circle { fill: #4af; pointer-events: all; cursor: move; }
+  #links circle.del { fill: #d33; cursor: pointer; }
   .scene { position: absolute; width: 260px; display: flex; flex-direction: column; gap: 6px; background: #000; cursor: grab; user-select: none; }
   .scene img { width: 100%; border: 1px solid #333; pointer-events: none; }
   .scene textarea { background: #111; color: #eee; border: 1px solid #333; min-height: 60px; resize: vertical; cursor: text; }
   .tools { display: flex; gap: 4px; }
   button, label { background: #222; color: #eee; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
   input[type=file] { display: none; }
-  @page { size: A4 landscape; margin: 10mm; }
+  dialog { background: #111; color: #eee; border: 1px solid #444; min-width: 480px; }
+  #list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; max-height: 60vh; overflow: auto; }
+  #list div { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
+  #list button:first-child { text-align: left; }
+  #name { background: #222; color: #eee; border: 1px solid #444; padding: 4px 8px; }
+  #where { color: #888; }
   @media print {
-    body, .scene { background: #fff; color: #000; }
+    body, .scene { background: #fff; color: #000; overflow: hidden; }
     header { display: none; }
     .tools { visibility: hidden; }
     .scene textarea { background: #fff; color: #000; resize: none; overflow: hidden; }
-    #board { transform-origin: 0 0; }
+    #board { transform-origin: 0 0; width: var(--w); height: var(--h); transform: translate(var(--tx), var(--ty)); }
     #links { overflow: visible; }
   }
 </style>
 <header>
   <label>+ Immagini<input id="add" type="file" accept="image/*" multiple></label>
+  <input id="name" placeholder="Nome progetto">
   <button id="save">Salva</button>
-  <label>Apri<input id="open" type="file" accept=".json"></label>
-  <button onclick="print()">Esporta PDF per IA</button>
+  <button id="new">Nuovo</button>
+  <button id="arch">Archivio</button>
+  <button id="pdf">Esporta PDF per IA</button>
 </header>
+<dialog id="archive"><b>Archivio progetti</b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()">Chiudi</button></dialog>
 <div id="board">
   <svg id="links"><defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs><g></g></svg>
 </div>
 <script>
 let scenes = [];
+let dirty = false;
 const board = document.getElementById('board');
 const links = document.querySelector('#links g');
 
-function drawLinks() {
-  const els = [...board.querySelectorAll('.scene')];
-  const c = el => [el.offsetLeft + el.offsetWidth / 2, el.offsetTop + el.offsetHeight / 2];
-  links.innerHTML = els.slice(1).map((el, i) => {
-    const [x1, y1] = c(els[i]), [x2, y2] = c(el);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>`;
-  }).join('');
+let sel = null;
+const box = s => { const el = board.querySelectorAll('.scene')[scenes.indexOf(s)]; return { x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2, w: el.offsetWidth / 2 + 6, h: el.offsetHeight / 2 + 6 }; };
+const pt = e => { const r = board.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+const sceneAt = e => scenes[document.elementsFromPoint(e.clientX, e.clientY).find(x => x.classList.contains('scene'))?.dataset.i];
+const canLink = (a, b) => a && b && a !== b && !a.links.some(l => l.to === b);
+const drag = (move, up) => { onpointermove = move; onpointerup = e => { onpointermove = onpointerup = null; up(e); }; };
+const unlink = () => { sel.s.links.splice(sel.s.links.indexOf(sel.l), 1); sel = null; dirty = true; drawLinks(); };
+
+function drawLinks(tmp) {
+  const edge = (b, dx, dy) => { const t = Math.min(b.w / Math.abs(dx), b.h / Math.abs(dy)); return [b.x + dx * t, b.y + dy * t]; };
+  let html = '';
+  scenes.forEach((s, i) => s.links.forEach((l, j) => {
+    const a = box(s), b = box(l.to);
+    if (Math.abs(b.x - a.x) < a.w + b.w && Math.abs(b.y - a.y) < a.h + b.h) return;
+    const cx = (a.x + b.x) / 2 + (l.bx ?? 0), cy = (a.y + b.y) / 2 + (l.by ?? 0);
+    const [x1, y1] = edge(a, cx - a.x, cy - a.y), [x2, y2] = edge(b, cx - b.x, cy - b.y);
+    const d = `M${x1},${y1}Q${cx},${cy} ${x2},${y2}`, mx = (x1 + 2 * cx + x2) / 4, my = (y1 + 2 * cy + y2) / 4, on = sel?.l === l;
+    html += `<g data-link="${i},${j}"><path class="hit" d="${d}"/><path d="${d}" fill="none" stroke="${on ? '#4af' : '#888'}" stroke-width="2" marker-end="url(#arr)"/>` +
+      (on ? `<circle data-h="tail" cx="${x1}" cy="${y1}" r="6"/><circle data-h="head" cx="${x2}" cy="${y2}" r="6"/><circle data-h="mid" cx="${mx}" cy="${my}" r="6"/><circle data-h="del" class="del" cx="${mx + 18}" cy="${my - 18}" r="7"><title>Elimina freccia</title></circle>` : '') + '</g>';
+  }));
+  if (tmp) html += `<line x1="${tmp[0]}" y1="${tmp[1]}" x2="${tmp[2]}" y2="${tmp[3]}" stroke="#4af" stroke-width="2" stroke-dasharray="6 4"/>`;
+  links.innerHTML = html;
 }
+
+links.onpointerdown = e => {
+  e.stopPropagation();
+  const [i, j] = e.target.closest('[data-link]').dataset.link.split(',');
+  const s = scenes[i], l = s.links[j], h = e.target.dataset.h;
+  if (h === 'del') return unlink();
+  sel = { s, l };
+  drawLinks();
+  if (!h) return;
+  let p = pt(e);
+  drag(m => {
+    const q = pt(m);
+    if (h === 'mid') { l.bx = (l.bx ?? 0) + 2 * (q.x - p.x); l.by = (l.by ?? 0) + 2 * (q.y - p.y); p = q; dirty = true; return drawLinks(); }
+    const o = box(h === 'head' ? s : l.to);
+    drawLinks([o.x, o.y, q.x, q.y]);
+  }, u => {
+    const t = sceneAt(u);
+    if (h === 'head' && canLink(s, t)) { l.to = t; dirty = true; }
+    if (h === 'tail' && canLink(t, l.to)) { s.links.splice(s.links.indexOf(l), 1); t.links.push(l); sel.s = t; dirty = true; }
+    drawLinks();
+  });
+};
+board.onpointerdown = () => { if (sel) { sel = null; drawLinks(); } };
+onkeydown = e => { if (sel && e.key === 'Delete' && !e.target.closest('textarea, input')) unlink(); };
 
 function render() {
   board.querySelectorAll('.scene').forEach(e => e.remove());
@@ -54,21 +106,28 @@ function render() {
     el.className = 'scene';
     el.style.left = s.x + 'px';
     el.style.top = s.y + 'px';
+    el.dataset.i = i;
     el.innerHTML = `<b>Scena ${i + 1}</b><img><textarea placeholder="Commento..."></textarea>
-      <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-d>✕</button></div>`;
+      <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-a title="Trascina su un'altra scena per collegarla">↗</button><button data-d>✕</button></div>`;
     el.querySelector('img').src = s.img;
-    el.querySelector('img').onload = drawLinks;
+    el.querySelector('img').onload = () => drawLinks();
     const ta = el.querySelector('textarea');
     ta.value = s.text;
-    ta.oninput = () => s.text = ta.value;
-    new ResizeObserver(drawLinks).observe(ta);
+    ta.oninput = () => { s.text = ta.value; dirty = true; };
+    new ResizeObserver(() => drawLinks()).observe(ta);
+    el.querySelector('[data-a]').onpointerdown = e => {
+      e.stopPropagation();
+      drag(m => { const a = box(s), q = pt(m); drawLinks([a.x, a.y, q.x, q.y]); },
+        u => { const t = sceneAt(u); if (canLink(s, t)) { s.links.push({ to: t }); dirty = true; } drawLinks(); });
+    };
     el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
       const j = i + +b.dataset.m;
       if (j < 0 || j >= scenes.length) return;
       [scenes[i], scenes[j]] = [scenes[j], scenes[i]];
+      dirty = true;
       render();
     });
-    el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); render(); };
+    el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); scenes.forEach(o => o.links = o.links.filter(l => l.to !== s)); sel = null; dirty = true; render(); };
     el.onpointerdown = e => {
       if (e.target.closest('textarea, button')) return;
       const dx = e.clientX - s.x, dy = e.clientY - s.y;
@@ -79,6 +138,7 @@ function render() {
         s.y = Math.max(0, m.clientY - dy);
         el.style.left = s.x + 'px';
         el.style.top = s.y + 'px';
+        dirty = true;
         drawLinks();
       };
       el.onpointerup = () => { el.onpointermove = null; el.style.zIndex = ''; };
@@ -92,40 +152,92 @@ const readAs = (f, how) => new Promise(r => { const fr = new FileReader(); fr.on
 
 document.getElementById('add').onchange = async e => {
   const files = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-  for (const f of files) scenes.push({ img: await readAs(f, 'readAsDataURL'), text: '' });
+  for (const f of files) {
+    const s = { img: await readAs(f, 'readAsDataURL'), text: '', links: [] };
+    scenes.at(-1)?.links.push({ to: s });
+    scenes.push(s);
+  }
   e.target.value = '';
+  dirty = true;
   render();
 };
 
-document.getElementById('save').onclick = () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(scenes)], { type: 'application/json' }));
-  a.download = 'storyboard.json';
-  a.click();
+const fail = err => alert(err.message);
+const toFile = () => scenes.map(s => ({ ...s, links: s.links.map(l => ({ ...l, to: scenes.indexOf(l.to) })) }));
+const fromFile = list => {
+  const links = list.map((s, i) => s.links ? s.links.map(l => ({ ...l, to: list[l.to] })).filter(l => l.to) : list[i + 1] ? [{ to: list[i + 1] }] : []);
+  list.forEach((s, i) => s.links = links[i]);
+  return list;
 };
 
-document.getElementById('open').onchange = async e => {
-  scenes = JSON.parse(await readAs(e.target.files[0], 'readAsText'));
-  e.target.value = '';
-  render();
+let current = '';
+const nameEl = document.getElementById('name');
+const saveBtn = document.getElementById('save');
+const discard = () => !dirty || confirm('Ci sono modifiche non salvate. Continuare?');
+const load = s => { scenes = fromFile(s); sel = null; dirty = false; render(); };
+
+saveBtn.onclick = async () => {
+  const name = nameEl.value.trim();
+  if (!name) { alert('Scrivi il nome del progetto.'); return nameEl.focus(); }
+  try {
+    const same = n => n.toLowerCase() === name.toLowerCase();
+    if (!same(current) && (await api.list()).some(p => same(p.name)) && !confirm(`"${name}" esiste già nell'archivio. Sovrascrivere?`)) return;
+    await api.save(name, toFile());
+    current = nameEl.value = name;
+    dirty = false;
+    saveBtn.textContent = 'Salvato ✓';
+    setTimeout(() => saveBtn.textContent = 'Salva', 1500);
+  } catch (e) { fail(e); }
 };
 
-let undoPrint;
-onbeforeprint = () => {
+document.getElementById('new').onclick = () => {
+  if (discard()) { load([]); current = nameEl.value = ''; }
+};
+
+async function showArchive() {
+  const list = document.getElementById('list');
+  const items = await api.list();
+  document.getElementById('where').textContent = await api.folder();
+  list.replaceChildren(items.length ? '' : 'Nessun progetto salvato.');
+  for (const p of items) {
+    const row = document.createElement('div');
+    row.innerHTML = '<button></button><span></span><button>Elimina</button>';
+    const [open, info, del] = row.children;
+    open.textContent = p.name;
+    info.textContent = `${p.scenes} scene · ${new Date(p.date).toLocaleString()}`;
+    open.onclick = () => { if (discard()) api.load(p.name).then(s => { load(s); current = nameEl.value = p.name; archive.close(); }).catch(fail); };
+    del.onclick = () => {
+      if (!confirm(`Eliminare definitivamente "${p.name}"?`)) return;
+      api.remove(p.name).then(() => { if (p.name === current) { current = ''; dirty = true; } showArchive(); }).catch(fail);
+    };
+    list.append(row);
+  }
+  if (!archive.open) archive.showModal();
+}
+document.getElementById('arch').onclick = () => showArchive().catch(fail);
+
+function preparePrint() {
   const els = [...board.querySelectorAll('.scene')];
-  if (!els.length) return;
+  if (!els.length) return null;
   const tas = els.map(e => e.querySelector('textarea'));
   const hs = tas.map(t => t.style.height);
   tas.forEach(t => t.style.height = t.scrollHeight + 'px');
+  sel = null;
   drawLinks();
-  const x0 = Math.min(...els.map(e => e.offsetLeft)), y0 = Math.min(...els.map(e => e.offsetTop));
-  const w = Math.max(...els.map(e => e.offsetLeft + e.offsetWidth)) - x0;
-  const h = Math.max(...els.map(e => e.offsetTop + e.offsetHeight)) - y0;
-  const k = Math.min(1, 1040 / w, 700 / h);
-  Object.assign(board.style, { width: w * k + 'px', height: h * k + 'px', transform: `scale(${k}) translate(${-x0}px, ${-y0}px)` });
-  undoPrint = () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); drawLinks(); };
-};
-onafterprint = () => { undoPrint?.(); undoPrint = null; };
+  const pad = 30;
+  const x0 = Math.min(...els.map(e => e.offsetLeft)) - pad, y0 = Math.min(...els.map(e => e.offsetTop)) - pad;
+  const w = Math.ceil(Math.max(...els.map(e => e.offsetLeft + e.offsetWidth)) - x0 + pad);
+  const h = Math.ceil(Math.max(...els.map(e => e.offsetTop + e.offsetHeight)) - y0 + pad);
+  const vars = { '--w': w + 'px', '--h': h + 'px', '--tx': -x0 + 'px', '--ty': -y0 + 'px' };
+  for (const v in vars) board.style.setProperty(v, vars[v]);
+  return { w, h, undo: () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); drawLinks(); } };
+}
 
-onbeforeunload =() => scenes.length ? true : undefined;
+document.getElementById('pdf').onclick = () => {
+  const page = preparePrint();
+  if (!page) return alert('Nessuna scena da esportare.');
+  api.pdf(page.w, page.h).catch(fail).finally(page.undo);
+};
+
+onbeforeunload = () => dirty ? true : undefined;
 </script>
