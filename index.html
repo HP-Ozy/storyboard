@@ -3,16 +3,18 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
 <title>Storyboard</title>
 <style>
-  body { margin: 0; background: #000; color: #eee; font: 14px system-ui; }
-  header { position: sticky; top: 0; z-index: 2; padding: 10px; background: #111; display: flex; gap: 8px; }
-  #board { position: relative; width: 6000px; height: 4000px; }
+  html { scrollbar-width: none; }
+  body { margin: 0; background: #1c1d21 radial-gradient(#2e3036 1px, transparent 1px) 0 0 / 24px 24px; color: #e6e6e6; font: 14px system-ui; }
+  header { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 8px; background: #26282de6; border: 1px solid #34363c; border-radius: 14px; box-shadow: 0 4px 16px #0006; backdrop-filter: blur(6px); display: flex; gap: 8px; white-space: nowrap; }
+  #board { position: relative; width: 6000px; height: 4000px; cursor: grab; }
+  #board.pan { cursor: grabbing; }
   #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #links .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
   #links circle { fill: #4af; pointer-events: all; cursor: move; }
   #links circle.del { fill: #d33; cursor: pointer; }
-  .scene { position: absolute; width: 260px; display: flex; flex-direction: column; gap: 6px; background: #000; cursor: grab; user-select: none; }
+  .scene { position: absolute; width: 260px; display: flex; flex-direction: column; gap: 6px; background: transparent; cursor: grab; user-select: none; }
   .scene img { width: 100%; border: 1px solid #333; border-radius: 8px; pointer-events: none; }
-  .scene textarea { background: #111; color: #eee; border: 1px solid #333; min-height: 60px; resize: vertical; cursor: text; border-radius: 8px; padding: 6px; }
+  .scene textarea { background: #25272c; color: #e6e6e6; border: 1px solid #3a3c42; min-height: 60px; resize: vertical; cursor: text; border-radius: 8px; padding: 6px; }
   .tools { display: flex; gap: 4px; }
   .sound { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid #2a3a4a; border-radius: 8px; background: #0b1520; }
   .sound textarea { min-height: 40px; }
@@ -23,17 +25,32 @@
   input[type=file] { display: none; }
   dialog { background: #111; color: #eee; border: 1px solid #444; min-width: 480px; border-radius: 14px; padding: 18px; }
   dialog::backdrop { background: #0008; }
-  #list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; max-height: 60vh; overflow: auto; }
+  #list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; max-height: 60vh; overflow: auto; scrollbar-width: thin; scrollbar-color: #44474e transparent; }
   #list div { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
   #list button:first-child { text-align: left; }
   #name { background: #222; color: #eee; border: 1px solid #444; padding: 5px 10px; border-radius: 8px; }
-  #cur { margin-left: auto; align-self: center; padding: 4px 14px; border-radius: 999px; background: #222; color: #999; border: 1px solid #333; }
+  #cur { margin-left: 8px; align-self: center; padding: 4px 14px; border-radius: 999px; background: #222; color: #999; border: 1px solid #333; }
   #cur.on { background: #12263a; color: #cfe6ff; border-color: #2a5a8a; }
   #cur.on::before { content: '●'; color: #4af; margin-right: 8px; }
   #list .cur button:first-child { border-color: #4af; color: #cfe6ff; }
   #where { color: #888; }
   body.drop::after { content: 'Rilascia il file per aprire il progetto'; position: fixed; inset: 12px; z-index: 9; display: grid; place-items: center; border: 3px dashed #4af; border-radius: 14px; background: #0a1a2acc; color: #cfe6ff; font-size: 22px; pointer-events: none; }
+  .story { display: flex; flex-wrap: wrap; gap: 4px; }
+  .story button { padding: 2px 8px; font-size: 12px; border-radius: 999px; background: #263026; border-color: #3f5a3f; color: #cfe8c0; }
+  .story button::after { content: ' ×'; opacity: .6; }
+  .story select { background: #25272c; color: #aaa; border: 1px dashed #44474e; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+  #story { position: fixed; right: 12px; bottom: 12px; z-index: 2; width: 270px; padding: 8px 12px; background: #26282de6; border: 1px solid #34363c; border-radius: 14px; box-shadow: 0 4px 16px #0006; backdrop-filter: blur(6px); }
+  #story summary { cursor: pointer; font-weight: 600; }
+  #story.done summary { color: #8fd88f; }
+  #story ol { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; }
+  #story li { color: #888; }
+  #story li::before { content: '☐ '; }
+  #story li.ok { color: #e6e6e6; }
+  #story li.ok::before { content: '✓ '; color: #8fd88f; }
+  #story small { display: block; margin-left: 1.4em; color: #777; }
   @media print {
+    #story, .story select, .story button::after { display: none; }
+    .story button { background: #fff; color: #000; border-color: #999; }
     body, .scene { background: #fff; color: #000; overflow: hidden; }
     header { display: none; }
     .tools, .sound audio, .sound div { display: none; }
@@ -56,10 +73,31 @@
   <span id="cur">Nuovo progetto · non salvato</span>
 </header>
 <dialog id="archive"><b>Archivio progetti</b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()">Chiudi</button></dialog>
+<details id="story" open><summary></summary><ol></ol></details>
 <div id="board">
   <svg id="links"><defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs><g></g></svg>
 </div>
 <script>
+const STORY = [
+  ['Protagonista', 'Personaggio che guida la storia', 'Chi stiamo seguendo?'],
+  ['Obiettivo', 'Ciò che il protagonista vuole ottenere', 'Che cosa desidera?'],
+  ['Motivazione', 'Ragione per cui desidera qualcosa', 'Perché lo vuole?'],
+  ['Conflitto', "Ostacoli che impediscono di raggiungere l'obiettivo", 'Cosa glielo impedisce?'],
+  ['Antagonista', 'Forza che si oppone al protagonista', 'Chi o cosa gli si oppone?'],
+  ['Posta in gioco', 'Conseguenze del successo o del fallimento', 'Che cosa rischia di perdere?'],
+  ['Ambientazione', 'Mondo, epoca e regole in cui avvengono gli eventi', 'Dove e quando accade?'],
+  ['Arco di trasformazione', 'Evoluzione psicologica o morale del personaggio', 'Come cambia?'],
+  ['Tema', 'Idea profonda esplorata dalla storia', 'Di cosa parla veramente?'],
+  ['Risoluzione', 'Conseguenza finale delle scelte e dei conflitti', 'Come si conclude?'],
+];
+function drawStory() {
+  const used = new Set(scenes.flatMap(s => s.tags));
+  const panel = document.getElementById('story');
+  panel.classList.toggle('done', used.size === STORY.length);
+  panel.querySelector('summary').textContent = used.size === STORY.length ? 'Storia coerente e comprensibile ✓' : `Elementi narrativi ${used.size}/${STORY.length}`;
+  panel.querySelector('ol').innerHTML = STORY.map(([n, f, q], k) => `<li class="${used.has(k) ? 'ok' : ''}" title="${f}"><b>${n}</b><small>${q}</small></li>`).join('');
+}
+
 let scenes = [];
 let dirty = false;
 const board = document.getElementById('board');
@@ -110,7 +148,14 @@ links.onpointerdown = e => {
     drawLinks();
   });
 };
-board.onpointerdown = () => { if (sel) { sel = null; drawLinks(); } };
+board.onpointerdown = e => {
+  if (sel) { sel = null; drawLinks(); }
+  if (e.target !== board) return;
+  board.setPointerCapture(e.pointerId);
+  board.classList.add('pan');
+  board.onpointermove = m => scrollBy(-m.movementX, -m.movementY);
+  board.onpointerup = () => { board.onpointermove = null; board.classList.remove('pan'); };
+};
 onkeydown = e => { if (sel && e.key === 'Delete' && !e.target.closest('textarea, input')) unlink(); };
 
 function render() {
@@ -124,6 +169,7 @@ function render() {
     el.style.top = s.y + 'px';
     el.dataset.i = i;
     el.innerHTML = `<b>Scena ${i + 1}</b><img><textarea placeholder="Commento..."></textarea>
+      <div class="story"></div>
       <div class="sound"><b>🎵 Audio</b><textarea class="snd" placeholder="Genere, atmosfera, effetti sonori..."></textarea><audio controls></audio>
         <div><label>Allega traccia<input type="file" accept="audio/*"></label><button data-r title="Rimuovi traccia">✕</button></div></div>
       <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-a title="Trascina su un'altra scena per collegarla">↗</button><button data-d>✕</button></div>`;
@@ -136,6 +182,12 @@ function render() {
     au.hidden = rm.hidden = !s.audio;
     el.querySelector('.sound input').onchange = async e => { s.audio = await readAs(e.target.files[0], 'readAsDataURL'); dirty = true; render(); };
     rm.onclick = () => { delete s.audio; dirty = true; render(); };
+    s.tags ??= [];
+    const story = el.querySelector('.story');
+    story.innerHTML = s.tags.map(k => `<button data-t="${k}" title="${STORY[k][2]}">${STORY[k][0]}</button>`).join('') +
+      `<select><option value="">+ Elemento narrativo</option>${STORY.map(([n], k) => s.tags.includes(k) ? '' : `<option value="${k}">${n}</option>`).join('')}</select>`;
+    story.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { s.tags = s.tags.filter(k => k !== +b.dataset.t); dirty = true; render(); });
+    story.querySelector('select').onchange = e => { s.tags = [...s.tags, +e.target.value].sort((a, b) => a - b); dirty = true; render(); };
     const ta = el.querySelector('textarea');
     ta.value = s.text;
     ta.oninput = () => { s.text = ta.value; dirty = true; };
@@ -154,7 +206,7 @@ function render() {
     });
     el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); scenes.forEach(o => o.links = o.links.filter(l => l.to !== s)); sel = null; dirty = true; render(); };
     el.onpointerdown = e => {
-      if (e.target.closest('textarea, button, label, audio')) return;
+      if (e.target.closest('textarea, button, label, audio, select')) return;
       const dx = e.clientX - s.x, dy = e.clientY - s.y;
       el.setPointerCapture(e.pointerId);
       el.style.zIndex = 1;
@@ -171,6 +223,7 @@ function render() {
     board.append(el);
   });
   drawLinks();
+  drawStory();
 }
 
 const readAs = (f, how) => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr[how](f); });
@@ -297,5 +350,6 @@ ondrop = async e => {
   } catch (err) { fail(err); }
 };
 
+drawStory();
 onbeforeunload = () => dirty ? true : undefined;
 </script>

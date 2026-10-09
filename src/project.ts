@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 export interface Link { to: number; bx?: number; by?: number }
-export interface Scene { img: string; text: string; sound?: string; audio?: string; x?: number; y?: number; links?: Link[] }
+export interface Scene { img: string; text: string; sound?: string; audio?: string; x?: number; y?: number; links?: Link[]; tags?: number[] }
 
 const extOf: Record<string, string> = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp', 'svg+xml': 'svg', bmp: 'bmp', mpeg: 'mp3', wav: 'wav', ogg: 'ogg', flac: 'flac', webm: 'weba', 'x-m4a': 'm4a', mp4: 'm4a' };
 const mimeOf: Record<string, string> = Object.fromEntries(Object.entries(extOf).map(([m, e]) => [e, m]));
@@ -46,7 +46,7 @@ export const deleteProject = (root: string, name: string) => fs.rm(projectDir(ro
 export async function writeProject(dir: string, scenes: Scene[]) {
   for (const f of Object.values(folder)) await fs.mkdir(path.join(dir, f), { recursive: true });
   const out = [];
-  for (const s of scenes) out.push({ image: await store(dir, s.img, 'image'), text: s.text, sound: s.sound, audio: s.audio ? await store(dir, s.audio, 'audio') : undefined, x: s.x, y: s.y, links: s.links });
+  for (const s of scenes) out.push({ image: await store(dir, s.img, 'image'), text: s.text, sound: s.sound, audio: s.audio ? await store(dir, s.audio, 'audio') : undefined, x: s.x, y: s.y, links: s.links, tags: s.tags?.length ? s.tags : undefined });
   const json = path.join(dir, 'project.json');
   await fs.writeFile(json + '.tmp', JSON.stringify({ version: 1, scenes: out }, null, 2));
   await fs.rename(json + '.tmp', json);
@@ -56,7 +56,7 @@ export async function writeProject(dir: string, scenes: Scene[]) {
 
 export async function readProject(dir: string): Promise<Scene[]> {
   const { scenes } = JSON.parse(await fs.readFile(path.join(dir, 'project.json'), 'utf8'));
-  return Promise.all(scenes.map(async (s: { image: string; text?: string; sound?: string; audio?: string; x?: number; y?: number; links?: Link[] }) => ({
-    img: await dataUrl(dir, s.image, 'image'), text: s.text ?? '', sound: s.sound ?? '', ...(s.audio && { audio: await dataUrl(dir, s.audio, 'audio') }), x: s.x, y: s.y, links: s.links,
+  return Promise.all(scenes.map(async (s: { image: string; text?: string; sound?: string; audio?: string; x?: number; y?: number; links?: Link[]; tags?: number[] }) => ({
+    img: await dataUrl(dir, s.image, 'image'), text: s.text ?? '', sound: s.sound ?? '', ...(s.audio && { audio: await dataUrl(dir, s.audio, 'audio') }), x: s.x, y: s.y, links: s.links, ...(s.tags && { tags: s.tags }),
   })));
 }
