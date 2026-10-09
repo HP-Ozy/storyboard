@@ -265,7 +265,8 @@ const links = document.querySelector('#links g');
 
 let sel = null;
 const box = s => { const el = board.querySelectorAll('.scene')[scenes.indexOf(s)]; return { x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2, w: el.offsetWidth / 2 + 6, h: el.offsetHeight / 2 + 6 }; };
-const pt = e => { const r = board.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+let scale = 1;
+const pt = e => { const r = board.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; };
 const sceneAt = e => scenes[document.elementsFromPoint(e.clientX, e.clientY).find(x => x.classList.contains('scene'))?.dataset.i];
 const canLink = (a, b) => a && b && a !== b && !a.links.some(l => l.to === b);
 const drag = (move, up) => { onpointermove = move; onpointerup = e => { onpointermove = onpointerup = null; up(e); }; };
@@ -316,6 +317,14 @@ board.onpointerdown = e => {
   board.onpointermove = m => scrollBy(-m.movementX, -m.movementY);
   board.onpointerup = () => { board.onpointermove = null; board.classList.remove('pan'); };
 };
+addEventListener('wheel', e => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  const p = pt(e);
+  scale = Math.min(3, Math.max(0.2, scale * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  board.style.zoom = scale;
+  scrollTo(p.x * scale - e.clientX, p.y * scale - e.clientY);
+}, { passive: false });
 onkeydown = e => { if (sel && e.key === 'Delete' && !e.target.closest('textarea, input')) unlink(); };
 
 function render() {
@@ -367,12 +376,12 @@ function render() {
     el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); scenes.forEach(o => o.links = o.links.filter(l => l.to !== s)); sel = null; dirty = true; render(); };
     el.onpointerdown = e => {
       if (e.target.closest('textarea, button, label, audio, select')) return;
-      const dx = e.clientX - s.x, dy = e.clientY - s.y;
+      const dx = e.clientX / scale - s.x, dy = e.clientY / scale - s.y;
       el.setPointerCapture(e.pointerId);
       el.style.zIndex = 1;
       el.onpointermove = m => {
-        s.x = Math.max(0, m.clientX - dx);
-        s.y = Math.max(0, m.clientY - dy);
+        s.x = Math.max(0, m.clientX / scale - dx);
+        s.y = Math.max(0, m.clientY / scale - dy);
         el.style.left = s.x + 'px';
         el.style.top = s.y + 'px';
         dirty = true;
@@ -463,6 +472,7 @@ async function showArchive() {
 document.getElementById('arch').onclick = () => showArchive().catch(fail);
 
 function preparePrint() {
+  board.style.zoom = '';
   const els = [...board.querySelectorAll('.scene')];
   if (!els.length) return null;
   const tas = [...board.querySelectorAll('textarea')];
@@ -476,7 +486,7 @@ function preparePrint() {
   const h = Math.ceil(Math.max(...els.map(e => e.offsetTop + e.offsetHeight)) - y0 + pad);
   const vars = { '--w': w + 'px', '--h': h + 'px', '--tx': -x0 + 'px', '--ty': -y0 + 'px' };
   for (const v in vars) board.style.setProperty(v, vars[v]);
-  return { w, h, undo: () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); drawLinks(); } };
+  return { w, h, undo: () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); board.style.zoom = scale; drawLinks(); } };
 }
 
 const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, scenes: toFile() });
