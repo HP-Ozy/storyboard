@@ -11,7 +11,7 @@ import { deleteProject, listProjects, projectDir, readProject, writeProject } fr
   await writeFile(path.join(dir, 'images', 'foto.jpg'), 'utente');
 
   const scenes = [
-    { img: img('png', 'a'), text: 'uno', sound: 'pioggia, synth cupo', audio: img('mpeg', 'm', 'audio'), x: 10, y: 20, links: [{ to: 1 }, { to: 2, bx: 30, by: -15 }], tags: [0, 6], chars: [3], feels: [1, 5] },
+    { img: img('png', 'a'), title: 'Apertura', text: 'uno', sound: 'pioggia, synth cupo', audio: img('mpeg', 'm', 'audio'), x: 10, y: 20, links: [{ to: 1 }, { to: 2, bx: 30, by: -15 }], tags: [0, 6], chars: [3], feels: [1, 5] },
     { img: img('jpeg', 'b'), text: 'due\nriga', sound: '', x: 300, y: 40, links: [{ to: 2 }] },
     { img: img('png', 'a'), text: 'tre', sound: '', audio: img('wav', 'w', 'audio'), x: 1, y: 2, links: [] },
   ];

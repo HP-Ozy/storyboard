@@ -15,6 +15,8 @@
   .scene { position: absolute; width: 260px; display: flex; flex-direction: column; gap: 6px; background: transparent; cursor: grab; user-select: none; }
   .scene img { width: 100%; border: 1px solid #333; border-radius: 8px; pointer-events: none; }
   .scene textarea { background: #25272c; color: #e6e6e6; border: 1px solid #3a3c42; min-height: 60px; resize: vertical; cursor: text; border-radius: 8px; padding: 6px; }
+  .scene .title { background: transparent; color: inherit; font: inherit; font-weight: 700; border: 1px solid transparent; border-radius: 6px; padding: 2px 4px; }
+  .scene .title:hover, .scene .title:focus { border-color: #3a3c42; background: #25272c; outline: none; }
   .tools { display: flex; gap: 4px; }
   .sound { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid #2a3a4a; border-radius: 8px; background: #0b1520; }
   .sound textarea { min-height: 40px; }
@@ -62,6 +64,7 @@
     .sound:has(.snd:placeholder-shown):not(:has(audio[src])) { display: none; }
     .sound:has(audio[src])::after { content: attr(data-att); font-style: italic; }
     .scene textarea { background: #fff; color: #000; resize: none; overflow: hidden; }
+    .scene .title, .scene .title::placeholder { color: #000; border-color: transparent; }
     #board { transform-origin: 0 0; width: var(--w); height: var(--h); transform: translate(var(--tx), var(--ty)); }
     #links { overflow: visible; }
   }
@@ -337,7 +340,7 @@ function render() {
     el.style.left = s.x + 'px';
     el.style.top = s.y + 'px';
     el.dataset.i = i;
-    el.innerHTML = `<b>${t('scene', i + 1)}</b><img><textarea placeholder="${t('comment')}"></textarea>
+    el.innerHTML = `<input class="title" placeholder="${t('scene', i + 1)}"><img><textarea placeholder="${t('comment')}"></textarea>
       <div class="story"></div>
       <div class="sound" data-att="${t('att')}"><b>🎵 Audio</b><textarea class="snd" placeholder="${t('sndPh')}"></textarea><audio controls></audio>
         <div><label>${t('attach')}<input type="file" accept="audio/*"></label><button data-r title="${t('rmTrack')}">✕</button></div></div>
@@ -347,6 +350,9 @@ function render() {
     const snd = el.querySelector('.snd'), au = el.querySelector('audio'), rm = el.querySelector('[data-r]');
     snd.value = s.sound ?? '';
     snd.oninput = () => { s.sound = snd.value; dirty = true; };
+    const title = el.querySelector('.title');
+    title.value = s.title ?? '';
+    title.oninput = () => { s.title = title.value; dirty = true; };
     if (s.audio) au.src = s.audio;
     au.hidden = rm.hidden = !s.audio;
     el.querySelector('.sound input').onchange = async e => { s.audio = await readAs(e.target.files[0], 'readAsDataURL'); dirty = true; render(); };
@@ -375,7 +381,7 @@ function render() {
     });
     el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); scenes.forEach(o => o.links = o.links.filter(l => l.to !== s)); sel = null; dirty = true; render(); };
     el.onpointerdown = e => {
-      if (e.target.closest('textarea, button, label, audio, select')) return;
+      if (e.target.closest('textarea, input, button, label, audio, select')) return;
       const dx = e.clientX / scale - s.x, dy = e.clientY / scale - s.y;
       el.setPointerCapture(e.pointerId);
       el.style.zIndex = 1;
