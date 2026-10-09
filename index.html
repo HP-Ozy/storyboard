@@ -28,20 +28,24 @@
   #list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; max-height: 60vh; overflow: auto; scrollbar-width: thin; scrollbar-color: #44474e transparent; }
   #list div { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
   #list button:first-child { text-align: left; }
-  #name { background: #222; color: #eee; border: 1px solid #444; padding: 5px 10px; border-radius: 8px; }
+  #name, #lang { background: #222; color: #eee; border: 1px solid #444; padding: 5px 10px; border-radius: 8px; }
   #cur { margin-left: 8px; align-self: center; padding: 4px 14px; border-radius: 999px; background: #222; color: #999; border: 1px solid #333; }
   #cur.on { background: #12263a; color: #cfe6ff; border-color: #2a5a8a; }
   #cur.on::before { content: '●'; color: #4af; margin-right: 8px; }
   #list .cur button:first-child { border-color: #4af; color: #cfe6ff; }
   #where { color: #888; }
-  body.drop::after { content: 'Rilascia il file per aprire il progetto'; position: fixed; inset: 12px; z-index: 9; display: grid; place-items: center; border: 3px dashed #4af; border-radius: 14px; background: #0a1a2acc; color: #cfe6ff; font-size: 22px; pointer-events: none; }
+  body.drop::after { content: attr(data-drop); position: fixed; inset: 12px; z-index: 9; display: grid; place-items: center; border: 3px dashed #4af; border-radius: 14px; background: #0a1a2acc; color: #cfe6ff; font-size: 22px; pointer-events: none; }
   .story { display: flex; flex-wrap: wrap; gap: 4px; }
   .story button { padding: 2px 8px; font-size: 12px; border-radius: 999px; background: #263026; border-color: #3f5a3f; color: #cfe8c0; }
+  .story button.g1 { background: #2c2638; border-color: #54477a; color: #ddd0ff; }
+  .story button.g2 { background: #332b1f; border-color: #6e5836; color: #f3dcb2; }
   .story button::after { content: ' ×'; opacity: .6; }
   .story select { background: #25272c; color: #aaa; border: 1px dashed #44474e; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
   #story { position: fixed; right: 12px; bottom: 12px; z-index: 2; width: 270px; padding: 8px 12px; background: #26282de6; border: 1px solid #34363c; border-radius: 14px; box-shadow: 0 4px 16px #0006; backdrop-filter: blur(6px); }
   #story summary { cursor: pointer; font-weight: 600; }
-  #story.done summary { color: #8fd88f; }
+  #story > div { max-height: 60vh; overflow: auto; scrollbar-width: thin; scrollbar-color: #44474e transparent; }
+  #story details { margin-top: 8px; }
+  #story.done > summary, #story .done > summary { color: #8fd88f; }
   #story ol { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; }
   #story li { color: #888; }
   #story li::before { content: '☐ '; }
@@ -50,52 +54,208 @@
   #story small { display: block; margin-left: 1.4em; color: #777; }
   @media print {
     #story, .story select, .story button::after { display: none; }
-    .story button { background: #fff; color: #000; border-color: #999; }
+    .story button, .story button.g1, .story button.g2 { background: #fff; color: #000; border-color: #999; }
     body, .scene { background: #fff; color: #000; overflow: hidden; }
     header { display: none; }
     .tools, .sound audio, .sound div { display: none; }
     .sound { background: #fff; border-color: #999; }
     .sound:has(.snd:placeholder-shown):not(:has(audio[src])) { display: none; }
-    .sound:has(audio[src])::after { content: 'Traccia musicale allegata'; font-style: italic; }
+    .sound:has(audio[src])::after { content: attr(data-att); font-style: italic; }
     .scene textarea { background: #fff; color: #000; resize: none; overflow: hidden; }
     #board { transform-origin: 0 0; width: var(--w); height: var(--h); transform: translate(var(--tx), var(--ty)); }
     #links { overflow: visible; }
   }
 </style>
 <header>
-  <label>+ Immagini<input id="add" type="file" accept="image/*" multiple></label>
-  <input id="name" placeholder="Nome progetto">
-  <button id="save">Salva</button>
-  <button id="new">Nuovo</button>
-  <button id="arch">Archivio</button>
-  <button id="exp">Esporta .storyboard</button>
-  <button id="pdf">Esporta PDF per IA</button>
-  <span id="cur">Nuovo progetto · non salvato</span>
+  <label><span data-i="images"></span><input id="add" type="file" accept="image/*" multiple></label>
+  <input id="name" data-ip="name">
+  <button id="save" data-i="save"></button>
+  <button id="new" data-i="new"></button>
+  <button id="arch" data-i="arch"></button>
+  <button id="exp" data-i="exp"></button>
+  <button id="pdf" data-i="pdf"></button>
+  <span id="cur"></span>
+  <select id="lang"><option value="it">IT</option><option value="en">EN</option><option value="es">ES</option></select>
 </header>
-<dialog id="archive"><b>Archivio progetti</b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()">Chiudi</button></dialog>
-<details id="story" open><summary></summary><ol></ol></details>
+<dialog id="archive"><b data-i="archTitle"></b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()" data-i="close"></button></dialog>
+<details id="story" open><summary></summary><div></div></details>
 <div id="board">
   <svg id="links"><defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs><g></g></svg>
 </div>
 <script>
-const STORY = [
-  ['Protagonista', 'Personaggio che guida la storia', 'Chi stiamo seguendo?'],
-  ['Obiettivo', 'Ciò che il protagonista vuole ottenere', 'Che cosa desidera?'],
-  ['Motivazione', 'Ragione per cui desidera qualcosa', 'Perché lo vuole?'],
-  ['Conflitto', "Ostacoli che impediscono di raggiungere l'obiettivo", 'Cosa glielo impedisce?'],
-  ['Antagonista', 'Forza che si oppone al protagonista', 'Chi o cosa gli si oppone?'],
-  ['Posta in gioco', 'Conseguenze del successo o del fallimento', 'Che cosa rischia di perdere?'],
-  ['Ambientazione', 'Mondo, epoca e regole in cui avvengono gli eventi', 'Dove e quando accade?'],
-  ['Arco di trasformazione', 'Evoluzione psicologica o morale del personaggio', 'Come cambia?'],
-  ['Tema', 'Idea profonda esplorata dalla storia', 'Di cosa parla veramente?'],
-  ['Risoluzione', 'Conseguenza finale delle scelte e dei conflitti', 'Come si conclude?'],
-];
+const L = {
+  it: {
+    images: '+ Immagini', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA',
+    newCur: 'Nuovo progetto · non salvato', working: n => `Stai lavorando su: ${n}`, archTitle: 'Archivio progetti', close: 'Chiudi',
+    drop: 'Rilascia il file per aprire il progetto', att: 'Traccia musicale allegata', delLink: 'Elimina freccia', scene: i => `Scena ${i}`, comment: 'Commento...',
+    sndPh: 'Genere, atmosfera, effetti sonori...', attach: 'Allega traccia', rmTrack: 'Rimuovi traccia', linkHint: "Trascina su un'altra scena per collegarla",
+    addEl: '+ Aggiungi', g0: 'Elementi narrativi', g1: 'Archetipi', g2: 'Esperienza dello spettatore', todo: 'Struttura della storia', missing: n => `manca nelle scene ${n}`, done: 'Storia coerente e comprensibile ✓',
+    unsaved: 'Ci sono modifiche non salvate. Continuare?', needName: 'Scrivi il nome del progetto.', exists: n => `"${n}" esiste già nell'archivio. Sovrascrivere?`,
+    empty: 'Nessun progetto salvato.', del: 'Elimina', count: n => `${n} ${n === 1 ? 'scena' : 'scene'}`, delAsk: n => `Eliminare definitivamente "${n}"?`,
+    noScenes: 'Nessuna scena da esportare.', badName: n => `Nome non valido: "${n}"`, badImage: 'Immagine non valida', badAudio: 'Audio non valido',
+    oldPdf: "Questo PDF è stato esportato con una versione precedente e contiene solo il disegno, non i dati del progetto. Scegli il progetto dall'archivio e riesportalo.",
+    story: [
+      ['Protagonista', 'Personaggio che guida la storia', 'Chi stiamo seguendo?'],
+      ['Obiettivo', 'Ciò che il protagonista vuole ottenere', 'Che cosa desidera?'],
+      ['Motivazione', 'Ragione per cui desidera qualcosa', 'Perché lo vuole?'],
+      ['Conflitto', "Ostacoli che impediscono di raggiungere l'obiettivo", 'Cosa glielo impedisce?'],
+      ['Antagonista', 'Forza che si oppone al protagonista', 'Chi o cosa gli si oppone?'],
+      ['Posta in gioco', 'Conseguenze del successo o del fallimento', 'Che cosa rischia di perdere?'],
+      ['Ambientazione', 'Mondo, epoca e regole in cui avvengono gli eventi', 'Dove e quando accade?'],
+      ['Arco di trasformazione', 'Evoluzione psicologica o morale del personaggio', 'Come cambia?'],
+      ['Tema', 'Idea profonda esplorata dalla storia', 'Di cosa parla veramente?'],
+      ['Risoluzione', 'Conseguenza finale delle scelte e dei conflitti', 'Come si conclude?'],
+    ],
+    chars: [
+      ['Eroe', 'Coraggioso', "Ha paura dell'abbandono"],
+      ['Mentore', 'Saggio', 'Non sa gestire i propri sentimenti'],
+      ['Antagonista', 'Spietato', 'Ama sinceramente la propria famiglia'],
+      ['Trickster', 'Divertente', 'Nasconde una profonda tristezza'],
+      ['Guerriero', 'Invincibile in battaglia', 'Non riesce a chiedere aiuto'],
+      ['Detective', 'Razionale', 'È ossessionato da un errore passato'],
+      ['Sovrano', 'Potente', 'Si sente completamente solo'],
+      ['Ribelle', 'Indipendente', 'Desidera segretamente essere accettato'],
+      ['Innocente', 'Ingenuo', 'Possiede un coraggio morale superiore agli altri'],
+      ['Antieroe', 'Egoista', 'Protegge chi non può difendersi'],
+    ],
+    feels: [
+      ['Ammirazione', 'Dimostrazione di competenza', 'Il detective risolve un enigma'],
+      ['Curiosità', 'Informazione incompleta ma significativa', 'Un personaggio nasconde una lettera'],
+      ['Soddisfazione', 'Setup seguito da payoff', 'Un dettaglio iniziale permette la vittoria finale'],
+      ['Empatia', 'Vulnerabilità comprensibile', 'Un eroe ammette di avere paura'],
+      ['Divertimento', 'Incongruenza, sorpresa, tempismo', 'Il Trickster inganna il tiranno'],
+      ['Tensione', 'Pericolo, incertezza, conseguenze', "L'eroe rischia di perdere una persona cara"],
+      ['Sollievo', 'Risoluzione di una tensione accumulata', 'Due amici si riconciliano'],
+      ['Meraviglia', 'Scoperta straordinaria', 'Il protagonista entra in un mondo sconosciuto'],
+      ['Commozione', 'Sacrificio, perdita, riconciliazione', 'Un antagonista rinuncia a vendicarsi'],
+      ['Empowerment', 'Superamento di un limite', 'Un personaggio timido trova il coraggio di parlare'],
+    ],
+  },
+  en: {
+    images: '+ Images', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI',
+    newCur: 'New project · not saved', working: n => `Working on: ${n}`, archTitle: 'Project archive', close: 'Close',
+    drop: 'Drop the file to open the project', att: 'Music track attached', delLink: 'Delete arrow', scene: i => `Scene ${i}`, comment: 'Comment...',
+    sndPh: 'Genre, mood, sound effects...', attach: 'Attach track', rmTrack: 'Remove track', linkHint: 'Drag onto another scene to link it',
+    addEl: '+ Add', g0: 'Story elements', g1: 'Archetypes', g2: 'Audience experience', todo: 'Story structure', missing: n => `missing in scenes ${n}`, done: 'Coherent and understandable story ✓',
+    unsaved: 'There are unsaved changes. Continue?', needName: 'Enter the project name.', exists: n => `"${n}" already exists in the archive. Overwrite?`,
+    empty: 'No saved projects.', del: 'Delete', count: n => `${n} ${n === 1 ? 'scene' : 'scenes'}`, delAsk: n => `Permanently delete "${n}"?`,
+    noScenes: 'No scenes to export.', badName: n => `Invalid name: "${n}"`, badImage: 'Invalid image', badAudio: 'Invalid audio',
+    oldPdf: 'This PDF was exported with an older version and only contains the drawing, not the project data. Pick the project from the archive and export it again.',
+    story: [
+      ['Protagonist', 'The character who drives the story', 'Who are we following?'],
+      ['Goal', 'What the protagonist wants to achieve', 'What do they want?'],
+      ['Motivation', 'The reason they want it', 'Why do they want it?'],
+      ['Conflict', 'Obstacles that block the goal', 'What stands in the way?'],
+      ['Antagonist', 'The force that opposes the protagonist', 'Who or what opposes them?'],
+      ['Stakes', 'Consequences of success or failure', 'What do they risk losing?'],
+      ['Setting', 'World, era and rules in which events take place', 'Where and when does it happen?'],
+      ['Character arc', 'Psychological or moral growth of the character', 'How do they change?'],
+      ['Theme', 'The deeper idea the story explores', 'What is it really about?'],
+      ['Resolution', 'Final outcome of choices and conflicts', 'How does it end?'],
+    ],
+    chars: [
+      ['Hero', 'Brave', 'Fears abandonment'],
+      ['Mentor', 'Wise', "Can't handle their own feelings"],
+      ['Antagonist', 'Ruthless', 'Sincerely loves their family'],
+      ['Trickster', 'Funny', 'Hides a deep sadness'],
+      ['Warrior', 'Invincible in battle', "Can't ask for help"],
+      ['Detective', 'Rational', 'Obsessed with a past mistake'],
+      ['Ruler', 'Powerful', 'Feels completely alone'],
+      ['Rebel', 'Independent', 'Secretly longs to be accepted'],
+      ['Innocent', 'Naive', 'Has greater moral courage than others'],
+      ['Antihero', 'Selfish', "Protects those who can't defend themselves"],
+    ],
+    feels: [
+      ['Admiration', 'Display of competence', 'The detective solves a puzzle'],
+      ['Curiosity', 'Incomplete but meaningful information', 'A character hides a letter'],
+      ['Satisfaction', 'Setup followed by payoff', 'An early detail enables the final victory'],
+      ['Empathy', 'Understandable vulnerability', 'A hero admits being afraid'],
+      ['Amusement', 'Incongruity, surprise, timing', 'The Trickster fools the tyrant'],
+      ['Tension', 'Danger, uncertainty, consequences', 'The hero risks losing a loved one'],
+      ['Relief', 'Release of built-up tension', 'Two friends reconcile'],
+      ['Wonder', 'Extraordinary discovery', 'The protagonist enters an unknown world'],
+      ['Being moved', 'Sacrifice, loss, reconciliation', 'An antagonist gives up revenge'],
+      ['Empowerment', 'Overcoming a limit', 'A shy character finds the courage to speak'],
+    ],
+  },
+  es: {
+    images: '+ Imágenes', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA',
+    newCur: 'Proyecto nuevo · sin guardar', working: n => `Trabajando en: ${n}`, archTitle: 'Archivo de proyectos', close: 'Cerrar',
+    drop: 'Suelta el archivo para abrir el proyecto', att: 'Pista musical adjunta', delLink: 'Eliminar flecha', scene: i => `Escena ${i}`, comment: 'Comentario...',
+    sndPh: 'Género, ambiente, efectos de sonido...', attach: 'Adjuntar pista', rmTrack: 'Quitar pista', linkHint: 'Arrastra sobre otra escena para conectarla',
+    addEl: '+ Añadir', g0: 'Elementos narrativos', g1: 'Arquetipos', g2: 'Experiencia del espectador', todo: 'Estructura de la historia', missing: n => `falta en las escenas ${n}`, done: 'Historia coherente y comprensible ✓',
+    unsaved: 'Hay cambios sin guardar. ¿Continuar?', needName: 'Escribe el nombre del proyecto.', exists: n => `"${n}" ya existe en el archivo. ¿Sobrescribir?`,
+    empty: 'No hay proyectos guardados.', del: 'Eliminar', count: n => `${n} ${n === 1 ? 'escena' : 'escenas'}`, delAsk: n => `¿Eliminar definitivamente "${n}"?`,
+    noScenes: 'No hay escenas para exportar.', badName: n => `Nombre no válido: "${n}"`, badImage: 'Imagen no válida', badAudio: 'Audio no válido',
+    oldPdf: 'Este PDF se exportó con una versión anterior y solo contiene el dibujo, no los datos del proyecto. Elige el proyecto en el archivo y vuelve a exportarlo.',
+    story: [
+      ['Protagonista', 'Personaje que guía la historia', '¿A quién seguimos?'],
+      ['Objetivo', 'Lo que el protagonista quiere conseguir', '¿Qué desea?'],
+      ['Motivación', 'Razón por la que lo desea', '¿Por qué lo quiere?'],
+      ['Conflicto', 'Obstáculos que le impiden alcanzar el objetivo', '¿Qué se lo impide?'],
+      ['Antagonista', 'Fuerza que se opone al protagonista', '¿Quién o qué se le opone?'],
+      ['Lo que está en juego', 'Consecuencias del éxito o del fracaso', '¿Qué arriesga perder?'],
+      ['Ambientación', 'Mundo, época y reglas en que ocurren los hechos', '¿Dónde y cuándo sucede?'],
+      ['Arco de transformación', 'Evolución psicológica o moral del personaje', '¿Cómo cambia?'],
+      ['Tema', 'Idea profunda que explora la historia', '¿De qué trata realmente?'],
+      ['Resolución', 'Consecuencia final de las decisiones y los conflictos', '¿Cómo termina?'],
+    ],
+    chars: [
+      ['Héroe', 'Valiente', 'Teme al abandono'],
+      ['Mentor', 'Sabio', 'No sabe manejar sus propios sentimientos'],
+      ['Antagonista', 'Despiadado', 'Ama sinceramente a su familia'],
+      ['Trickster', 'Divertido', 'Esconde una profunda tristeza'],
+      ['Guerrero', 'Invencible en batalla', 'No es capaz de pedir ayuda'],
+      ['Detective', 'Racional', 'Está obsesionado con un error del pasado'],
+      ['Soberano', 'Poderoso', 'Se siente completamente solo'],
+      ['Rebelde', 'Independiente', 'Desea en secreto ser aceptado'],
+      ['Inocente', 'Ingenuo', 'Tiene un coraje moral superior al de los demás'],
+      ['Antihéroe', 'Egoísta', 'Protege a quien no puede defenderse'],
+    ],
+    feels: [
+      ['Admiración', 'Demostración de competencia', 'El detective resuelve un enigma'],
+      ['Curiosidad', 'Información incompleta pero significativa', 'Un personaje esconde una carta'],
+      ['Satisfacción', 'Setup seguido de payoff', 'Un detalle inicial permite la victoria final'],
+      ['Empatía', 'Vulnerabilidad comprensible', 'Un héroe admite tener miedo'],
+      ['Diversión', 'Incongruencia, sorpresa, ritmo', 'El Trickster engaña al tirano'],
+      ['Tensión', 'Peligro, incertidumbre, consecuencias', 'El héroe corre el riesgo de perder a un ser querido'],
+      ['Alivio', 'Resolución de una tensión acumulada', 'Dos amigos se reconcilian'],
+      ['Asombro', 'Descubrimiento extraordinario', 'El protagonista entra en un mundo desconocido'],
+      ['Conmoción', 'Sacrificio, pérdida, reconciliación', 'Un antagonista renuncia a vengarse'],
+      ['Empoderamiento', 'Superación de un límite', 'Un personaje tímido encuentra el valor para hablar'],
+    ],
+  },
+};
+let lang = 'it';
+try { lang = localStorage.lang; } catch {}
+if (!L[lang]) lang = L[navigator.language.slice(0, 2)] ? navigator.language.slice(0, 2) : 'it';
+const t = (k, ...a) => { const v = L[lang][k]; return typeof v === 'function' ? v(...a) : v; };
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.getElementById('lang').value = lang;
+  document.querySelectorAll('[data-i]').forEach(e => e.textContent = t(e.dataset.i));
+  document.querySelectorAll('[data-ip]').forEach(e => e.placeholder = t(e.dataset.ip));
+  document.body.dataset.drop = t('drop');
+  setCurrent(current);
+  render();
+  api.lang(lang);
+}
+const GROUPS = [['tags', 'story', 'all'], ['chars', 'chars', 'scene'], ['feels', 'feels', 'scene']];
 function drawStory() {
-  const used = new Set(scenes.flatMap(s => s.tags));
-  const panel = document.getElementById('story');
-  panel.classList.toggle('done', used.size === STORY.length);
-  panel.querySelector('summary').textContent = used.size === STORY.length ? 'Storia coerente e comprensibile ✓' : `Elementi narrativi ${used.size}/${STORY.length}`;
-  panel.querySelector('ol').innerHTML = STORY.map(([n, f, q], k) => `<li class="${used.has(k) ? 'ok' : ''}" title="${f}"><b>${n}</b><small>${q}</small></li>`).join('');
+  const panel = document.getElementById('story'), box = panel.querySelector('div');
+  const open = [...box.querySelectorAll('details')].map(d => d.open);
+  let ok = 0;
+  box.innerHTML = GROUPS.map(([f, k, rule], g) => {
+    const items = t(k), used = new Set(scenes.flatMap(s => s[f] ?? []));
+    const miss = scenes.map((s, i) => s[f]?.length ? 0 : i + 1).filter(Boolean);
+    const done = rule === 'all' ? used.size === items.length : scenes.length > 0 && !miss.length;
+    ok += done;
+    const status = rule === 'all' ? `${used.size}/${items.length}` : done ? '✓' : scenes.length ? t('missing', miss.join(', ')) : '—';
+    return `<details class="${done ? 'done' : ''}"${open[g] ? ' open' : ''}><summary>${t('g' + g)} · ${status}</summary><ol>` +
+      items.map(([n, a, b], i) => `<li class="${used.has(i) ? 'ok' : ''}"><b>${n}</b><small>${a} · ${b}</small></li>`).join('') + '</ol></details>';
+  }).join('');
+  panel.classList.toggle('done', ok === GROUPS.length);
+  panel.querySelector('summary').textContent = ok === GROUPS.length ? t('done') : `${t('todo')} ${ok}/${GROUPS.length}`;
 }
 
 let scenes = [];
@@ -121,7 +281,7 @@ function drawLinks(tmp) {
     const [x1, y1] = edge(a, cx - a.x, cy - a.y), [x2, y2] = edge(b, cx - b.x, cy - b.y);
     const d = `M${x1},${y1}Q${cx},${cy} ${x2},${y2}`, mx = (x1 + 2 * cx + x2) / 4, my = (y1 + 2 * cy + y2) / 4, on = sel?.l === l;
     html += `<g data-link="${i},${j}"><path class="hit" d="${d}"/><path d="${d}" fill="none" stroke="${on ? '#4af' : '#888'}" stroke-width="2" marker-end="url(#arr)"/>` +
-      (on ? `<circle data-h="tail" cx="${x1}" cy="${y1}" r="6"/><circle data-h="head" cx="${x2}" cy="${y2}" r="6"/><circle data-h="mid" cx="${mx}" cy="${my}" r="6"/><circle data-h="del" class="del" cx="${mx + 18}" cy="${my - 18}" r="7"><title>Elimina freccia</title></circle>` : '') + '</g>';
+      (on ? `<circle data-h="tail" cx="${x1}" cy="${y1}" r="6"/><circle data-h="head" cx="${x2}" cy="${y2}" r="6"/><circle data-h="mid" cx="${mx}" cy="${my}" r="6"/><circle data-h="del" class="del" cx="${mx + 18}" cy="${my - 18}" r="7"><title>${t('delLink')}</title></circle>` : '') + '</g>';
   }));
   if (tmp) html += `<line x1="${tmp[0]}" y1="${tmp[1]}" x2="${tmp[2]}" y2="${tmp[3]}" stroke="#4af" stroke-width="2" stroke-dasharray="6 4"/>`;
   links.innerHTML = html;
@@ -168,11 +328,11 @@ function render() {
     el.style.left = s.x + 'px';
     el.style.top = s.y + 'px';
     el.dataset.i = i;
-    el.innerHTML = `<b>Scena ${i + 1}</b><img><textarea placeholder="Commento..."></textarea>
+    el.innerHTML = `<b>${t('scene', i + 1)}</b><img><textarea placeholder="${t('comment')}"></textarea>
       <div class="story"></div>
-      <div class="sound"><b>🎵 Audio</b><textarea class="snd" placeholder="Genere, atmosfera, effetti sonori..."></textarea><audio controls></audio>
-        <div><label>Allega traccia<input type="file" accept="audio/*"></label><button data-r title="Rimuovi traccia">✕</button></div></div>
-      <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-a title="Trascina su un'altra scena per collegarla">↗</button><button data-d>✕</button></div>`;
+      <div class="sound" data-att="${t('att')}"><b>🎵 Audio</b><textarea class="snd" placeholder="${t('sndPh')}"></textarea><audio controls></audio>
+        <div><label>${t('attach')}<input type="file" accept="audio/*"></label><button data-r title="${t('rmTrack')}">✕</button></div></div>
+      <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-a title="${t('linkHint')}">↗</button><button data-d>✕</button></div>`;
     el.querySelector('img').src = s.img;
     el.querySelector('img').onload = () => drawLinks();
     const snd = el.querySelector('.snd'), au = el.querySelector('audio'), rm = el.querySelector('[data-r]');
@@ -182,12 +342,12 @@ function render() {
     au.hidden = rm.hidden = !s.audio;
     el.querySelector('.sound input').onchange = async e => { s.audio = await readAs(e.target.files[0], 'readAsDataURL'); dirty = true; render(); };
     rm.onclick = () => { delete s.audio; dirty = true; render(); };
-    s.tags ??= [];
+    GROUPS.forEach(([f]) => s[f] ??= []);
     const story = el.querySelector('.story');
-    story.innerHTML = s.tags.map(k => `<button data-t="${k}" title="${STORY[k][2]}">${STORY[k][0]}</button>`).join('') +
-      `<select><option value="">+ Elemento narrativo</option>${STORY.map(([n], k) => s.tags.includes(k) ? '' : `<option value="${k}">${n}</option>`).join('')}</select>`;
-    story.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { s.tags = s.tags.filter(k => k !== +b.dataset.t); dirty = true; render(); });
-    story.querySelector('select').onchange = e => { s.tags = [...s.tags, +e.target.value].sort((a, b) => a - b); dirty = true; render(); };
+    story.innerHTML = GROUPS.map(([f, k], g) => s[f].map(i => `<button class="g${g}" data-f="${f}" data-k="${i}" title="${t(k)[i].slice(1).join(' · ')}">${t(k)[i][0]}</button>`).join('')).join('') +
+      `<select><option value="">${t('addEl')}</option>${GROUPS.map(([f, k], g) => `<optgroup label="${t('g' + g)}">${t(k).map(([n], i) => s[f].includes(i) ? '' : `<option value="${f}:${i}">${n}</option>`).join('')}</optgroup>`).join('')}</select>`;
+    story.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { const f = b.dataset.f; s[f] = s[f].filter(i => i !== +b.dataset.k); dirty = true; render(); });
+    story.querySelector('select').onchange = e => { const [f, i] = e.target.value.split(':'); s[f] = [...s[f], +i].sort((a, b) => a - b); dirty = true; render(); };
     const ta = el.querySelector('textarea');
     ta.value = s.text;
     ta.oninput = () => { s.text = ta.value; dirty = true; };
@@ -240,7 +400,7 @@ document.getElementById('add').onchange = async e => {
   render();
 };
 
-const fail = err => alert(err.message);
+const fail = err => { const m = /(bad\w+)(?::(.*))?$/.exec(err.message); alert(m ? t(m[1], m[2]) : err.message); };
 const toFile = () => scenes.map(s => ({ ...s, links: s.links.map(l => ({ ...l, to: scenes.indexOf(l.to) })) }));
 const fromFile = list => {
   const links = list.map((s, i) => s.links ? s.links.map(l => ({ ...l, to: list[l.to] })).filter(l => l.to) : list[i + 1] ? [{ to: list[i + 1] }] : []);
@@ -253,25 +413,25 @@ const setCurrent = n => {
   current = n;
   const cur = document.getElementById('cur');
   cur.className = n ? 'on' : '';
-  cur.textContent = n ? `Stai lavorando su: ${n}` : 'Nuovo progetto · non salvato';
+  cur.textContent = n ? t('working', n) : t('newCur');
   document.title = n ? `${n} — Storyboard` : 'Storyboard';
 };
 const nameEl = document.getElementById('name');
 const saveBtn = document.getElementById('save');
-const discard = () => !dirty || confirm('Ci sono modifiche non salvate. Continuare?');
+const discard = () => !dirty || confirm(t('unsaved'));
 const load = s => { scenes = fromFile(s); sel = null; dirty = false; render(); };
 
 saveBtn.onclick = async () => {
   const name = nameEl.value.trim();
-  if (!name) { alert('Scrivi il nome del progetto.'); return nameEl.focus(); }
+  if (!name) { alert(t('needName')); return nameEl.focus(); }
   try {
     const same = n => n.toLowerCase() === name.toLowerCase();
-    if (!same(current) && (await api.list()).some(p => same(p.name)) && !confirm(`"${name}" esiste già nell'archivio. Sovrascrivere?`)) return;
+    if (!same(current) && (await api.list()).some(p => same(p.name)) && !confirm(t('exists', name))) return;
     await api.save(name, toFile());
     setCurrent(nameEl.value = name);
     dirty = false;
-    saveBtn.textContent = 'Salvato ✓';
-    setTimeout(() => saveBtn.textContent = 'Salva', 1500);
+    saveBtn.textContent = t('saved');
+    setTimeout(() => saveBtn.textContent = t('save'), 1500);
   } catch (e) { fail(e); }
 };
 
@@ -283,17 +443,17 @@ async function showArchive() {
   const list = document.getElementById('list');
   const items = await api.list();
   document.getElementById('where').textContent = await api.folder();
-  list.replaceChildren(items.length ? '' : 'Nessun progetto salvato.');
+  list.replaceChildren(items.length ? '' : t('empty'));
   for (const p of items) {
     const row = document.createElement('div');
-    row.innerHTML = '<button></button><span></span><button>Elimina</button>';
+    row.innerHTML = `<button></button><span></span><button>${t('del')}</button>`;
     if (p.name === current) row.className = 'cur';
     const [open, info, del] = row.children;
     open.textContent = p.name;
-    info.textContent = `${p.scenes} scene · ${new Date(p.date).toLocaleString()}`;
+    info.textContent = `${t('count', p.scenes)} · ${new Date(p.date).toLocaleString(lang)}`;
     open.onclick = () => { if (discard()) api.load(p.name).then(s => { load(s); setCurrent(nameEl.value = p.name); archive.close(); }).catch(fail); };
     del.onclick = () => {
-      if (!confirm(`Eliminare definitivamente "${p.name}"?`)) return;
+      if (!confirm(t('delAsk', p.name))) return;
       api.remove(p.name).then(() => { if (p.name === current) { setCurrent(''); dirty = true; } showArchive(); }).catch(fail);
     };
     list.append(row);
@@ -324,7 +484,7 @@ document.getElementById('exp').onclick = () => api.exportFile(nameEl.value.trim(
 
 document.getElementById('pdf').onclick = () => {
   const page = preparePrint();
-  if (!page) return alert('Nessuna scena da esportare.');
+  if (!page) return alert(t('noScenes'));
   api.pdf(page.w, page.h, payload()).catch(fail).finally(page.undo);
 };
 
@@ -338,7 +498,7 @@ ondrop = async e => {
   const text = await f.text();
   const at = text.lastIndexOf('\n%STORYBOARD ');
   const json = f.name.endsWith('.storyboard') ? text : at < 0 ? null : text.slice(at + 13);
-  if (!json) { alert('Questo PDF è stato esportato con una versione precedente e contiene solo il disegno, non i dati del progetto. Scegli il progetto dall\'archivio e riesportalo.'); return showArchive().catch(fail); }
+  if (!json) { alert(t('oldPdf')); return showArchive().catch(fail); }
   if (!discard()) return;
   try {
     const p = JSON.parse(json);
@@ -350,6 +510,7 @@ ondrop = async e => {
   } catch (err) { fail(err); }
 };
 
-drawStory();
+document.getElementById('lang').onchange = e => { lang = e.target.value; try { localStorage.lang = lang; } catch {} applyLang(); };
+applyLang();
 onbeforeunload = () => dirty ? true : undefined;
 </script>
