@@ -13,7 +13,8 @@ import { deleteProject, listProjects, projectDir, readProject, writeProject } fr
   const scenes = [
     { img: img('png', 'a'), title: 'Apertura', text: 'uno', sound: 'pioggia, synth cupo', audio: img('mpeg', 'm', 'audio'), x: 10, y: 20, links: [{ to: 1 }, { to: 2, bx: 30, by: -15 }], tags: [0, 6], chars: [3], feels: [1, 5] },
     { img: img('jpeg', 'b'), text: 'due\nriga', sound: '', x: 300, y: 40, links: [{ to: 2 }] },
-    { img: img('png', 'a'), text: 'tre', sound: '', audio: img('wav', 'w', 'audio'), x: 1, y: 2, links: [] },
+    { img: img('png', 'a'), text: 'tre', sound: '', audio: img('wav', 'w', 'audio'), x: 1, y: 2, links: [{ to: 3 }] },
+    { title: 'Nota', text: 'solo testo', sound: '', x: 5, y: 6, links: [] },
   ];
   await writeProject(dir, scenes);
   assert.deepEqual(await readProject(dir), scenes);
@@ -33,7 +34,7 @@ import { deleteProject, listProjects, projectDir, readProject, writeProject } fr
   assert.deepEqual(await listProjects(root), []);
   await writeProject(projectDir(root, 'Spot caffè'), scenes);
   await writeProject(projectDir(root, 'Schema 2'), scenes.slice(0, 1));
-  assert.deepEqual((await listProjects(root)).map(p => [p.name, p.scenes]).sort(), [['Schema 2', 1], ['Spot caffè', 3]]);
+  assert.deepEqual((await listProjects(root)).map(p => [p.name, p.scenes]).sort(), [['Schema 2', 1], ['Spot caffè', 4]]);
   for (const bad of ['', '.', '..', '../x', 'a/b', 'a\\b', 'x.', 'c:', 'CON', 'nul.txt']) assert.throws(() => projectDir(root, bad));
   await deleteProject(root, 'Spot caffè');
   assert.deepEqual((await listProjects(root)).map(p => p.name), ['Schema 2']);

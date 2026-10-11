@@ -13,6 +13,16 @@
   #links circle { fill: #4af; pointer-events: all; cursor: move; }
   #links circle.del { fill: #d33; cursor: pointer; }
   .scene { position: absolute; width: 260px; display: flex; flex-direction: column; gap: 6px; background: transparent; cursor: grab; user-select: none; }
+  .scene.note { padding: 18px 8px 8px; background: #2a2c31; border: 1px solid #3a3c42; border-radius: 10px; }
+  .scene { border-radius: 10px; transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), box-shadow .25s ease, background .18s; }
+  .scene:hover { z-index: 1; transform: scale(1.03); background: #23252a; box-shadow: 0 0 0 1px #4af9, 0 10px 28px #0009; }
+  .scene.lift { z-index: 2; transform: translateY(-6px) scale(1.07) rotate(var(--tilt, 0deg)); box-shadow: 0 0 0 1px #4af, 0 30px 60px #000c; cursor: grabbing; transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), box-shadow .25s ease; }
+  @media (prefers-reduced-motion: reduce) { .scene, .scene.lift { transition: none; } .scene.lift { transform: scale(1.03); } }
+  .port { position: absolute; width: 12px; height: 12px; margin: -8px; border-radius: 50%; background: #4af; border: 2px solid #1c1d21; opacity: 0; cursor: crosshair; transition: opacity .15s, transform .15s; }
+  .scene:hover .port { opacity: 1; }
+  .port:hover { transform: scale(1.5); }
+  .port[data-p=n] { top: 0; left: 50%; } .port[data-p=e] { top: 50%; left: 100%; } .port[data-p=s] { top: 100%; left: 50%; } .port[data-p=w] { top: 50%; left: 0; }
+  .scene.picked { outline: 2px solid #4af; outline-offset: 4px; border-radius: 8px; }
   .scene img { width: 100%; border: 1px solid #333; border-radius: 8px; pointer-events: none; }
   .scene textarea { background: #25272c; color: #e6e6e6; border: 1px solid #3a3c42; min-height: 60px; resize: vertical; cursor: text; border-radius: 8px; padding: 6px; }
   .scene .title { background: transparent; color: inherit; font: inherit; font-weight: 700; border: 1px solid transparent; border-radius: 6px; padding: 2px 4px; }
@@ -59,7 +69,9 @@
     .story button, .story button.g1, .story button.g2 { background: #fff; color: #000; border-color: #999; }
     body, .scene { background: #fff; color: #000; overflow: hidden; }
     header { display: none; }
-    .tools, .sound audio, .sound div { display: none; }
+    .scene.picked { outline: none; }
+    .scene:hover, .scene.lift { transform: none; box-shadow: none; }
+    .tools, .port, .sound audio, .sound div { display: none; }
     .sound { background: #fff; border-color: #999; }
     .sound:has(.snd:placeholder-shown):not(:has(audio[src])) { display: none; }
     .sound:has(audio[src])::after { content: attr(data-att); font-style: italic; }
@@ -71,6 +83,8 @@
 </style>
 <header>
   <label><span data-i="images"></span><input id="add" type="file" accept="image/*" multiple></label>
+  <button id="text" data-i="text"></button>
+  <button id="align" data-i="align"></button>
   <input id="name" data-ip="name">
   <button id="save" data-i="save"></button>
   <button id="new" data-i="new"></button>
@@ -88,7 +102,7 @@
 <script>
 const L = {
   it: {
-    images: '+ Immagini', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA',
+    images: '+ Immagini', text: '+ Testo', align: 'Allinea', alignAsk: 'Rimettere le scene in griglia secondo il loro numero? La disposizione attuale andrà persa.', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA',
     newCur: 'Nuovo progetto · non salvato', working: n => `Stai lavorando su: ${n}`, archTitle: 'Archivio progetti', close: 'Chiudi',
     drop: 'Rilascia il file per aprire il progetto', att: 'Traccia musicale allegata', delLink: 'Elimina freccia', scene: i => `Scena ${i}`, comment: 'Commento...',
     sndPh: 'Genere, atmosfera, effetti sonori...', attach: 'Allega traccia', rmTrack: 'Rimuovi traccia', linkHint: "Trascina su un'altra scena per collegarla",
@@ -135,7 +149,7 @@ const L = {
     ],
   },
   en: {
-    images: '+ Images', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI',
+    images: '+ Images', text: '+ Text', align: 'Align', alignAsk: 'Put the scenes back in a grid by their number? The current layout will be lost.', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI',
     newCur: 'New project · not saved', working: n => `Working on: ${n}`, archTitle: 'Project archive', close: 'Close',
     drop: 'Drop the file to open the project', att: 'Music track attached', delLink: 'Delete arrow', scene: i => `Scene ${i}`, comment: 'Comment...',
     sndPh: 'Genre, mood, sound effects...', attach: 'Attach track', rmTrack: 'Remove track', linkHint: 'Drag onto another scene to link it',
@@ -182,7 +196,7 @@ const L = {
     ],
   },
   es: {
-    images: '+ Imágenes', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA',
+    images: '+ Imágenes', text: '+ Texto', align: 'Alinear', alignAsk: '¿Volver a colocar las escenas en cuadrícula según su número? La disposición actual se perderá.', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA',
     newCur: 'Proyecto nuevo · sin guardar', working: n => `Trabajando en: ${n}`, archTitle: 'Archivo de proyectos', close: 'Cerrar',
     drop: 'Suelta el archivo para abrir el proyecto', att: 'Pista musical adjunta', delLink: 'Eliminar flecha', scene: i => `Escena ${i}`, comment: 'Comentario...',
     sndPh: 'Género, ambiente, efectos de sonido...', attach: 'Adjuntar pista', rmTrack: 'Quitar pista', linkHint: 'Arrastra sobre otra escena para conectarla',
@@ -250,10 +264,11 @@ function drawStory() {
   let ok = 0;
   box.innerHTML = GROUPS.map(([f, k, rule], g) => {
     const items = t(k), used = new Set(scenes.flatMap(s => s[f] ?? []));
-    const miss = scenes.map((s, i) => s[f]?.length ? 0 : i + 1).filter(Boolean);
-    const done = rule === 'all' ? used.size === items.length : scenes.length > 0 && !miss.length;
+    // text-only nodes are notes: archetypes and feelings are required only on image scenes
+    const shots = scenes.some(s => s.img), miss = scenes.map((s, i) => s[f]?.length || !s.img ? 0 : i + 1).filter(Boolean);
+    const done = rule === 'all' ? used.size === items.length : shots && !miss.length;
     ok += done;
-    const status = rule === 'all' ? `${used.size}/${items.length}` : done ? '✓' : scenes.length ? t('missing', miss.join(', ')) : '—';
+    const status = rule === 'all' ? `${used.size}/${items.length}` : done ? '✓' : shots ? t('missing', miss.join(', ')) : '—';
     return `<details class="${done ? 'done' : ''}"${open[g] ? ' open' : ''}><summary>${t('g' + g)} · ${status}</summary><ol>` +
       items.map(([n, a, b], i) => `<li class="${used.has(i) ? 'ok' : ''}"><b>${n}</b><small>${a} · ${b}</small></li>`).join('') + '</ol></details>';
   }).join('');
@@ -267,6 +282,7 @@ const board = document.getElementById('board');
 const links = document.querySelector('#links g');
 
 let sel = null;
+const picked = new Set();
 const box = s => { const el = board.querySelectorAll('.scene')[scenes.indexOf(s)]; return { x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2, w: el.offsetWidth / 2 + 6, h: el.offsetHeight / 2 + 6 }; };
 let scale = 1;
 const pt = e => { const r = board.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; };
@@ -315,6 +331,7 @@ links.onpointerdown = e => {
 board.onpointerdown = e => {
   if (sel) { sel = null; drawLinks(); }
   if (e.target !== board) return;
+  if (!e.ctrlKey) { picked.clear(); board.querySelectorAll('.picked').forEach(p => p.classList.remove('picked')); }
   board.setPointerCapture(e.pointerId);
   board.classList.add('pan');
   board.onpointermove = m => scrollBy(-m.movementX, -m.movementY);
@@ -340,13 +357,15 @@ function render() {
     el.style.left = s.x + 'px';
     el.style.top = s.y + 'px';
     el.dataset.i = i;
+    el.classList.toggle('picked', picked.has(s));
     el.innerHTML = `<input class="title" placeholder="${t('scene', i + 1)}"><img><textarea placeholder="${t('comment')}"></textarea>
       <div class="story"></div>
       <div class="sound" data-att="${t('att')}"><b>🎵 Audio</b><textarea class="snd" placeholder="${t('sndPh')}"></textarea><audio controls></audio>
         <div><label>${t('attach')}<input type="file" accept="audio/*"></label><button data-r title="${t('rmTrack')}">✕</button></div></div>
-      <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-a title="${t('linkHint')}">↗</button><button data-d>✕</button></div>`;
-    el.querySelector('img').src = s.img;
-    el.querySelector('img').onload = () => drawLinks();
+      ${['n', 'e', 's', 'w'].map(p => `<i class="port" data-p="${p}" title="${t('linkHint')}"></i>`).join('')}
+      <div class="tools"><button data-m="-1">◀</button><button data-m="1">▶</button><button data-d>✕</button></div>`;
+    const img = el.querySelector('img');
+    if (s.img) { img.src = s.img; img.onload = () => drawLinks(); } else { img.remove(); el.classList.add('note'); }
     const snd = el.querySelector('.snd'), au = el.querySelector('audio'), rm = el.querySelector('[data-r]');
     snd.value = s.sound ?? '';
     snd.oninput = () => { s.sound = snd.value; dirty = true; };
@@ -367,11 +386,11 @@ function render() {
     ta.value = s.text;
     ta.oninput = () => { s.text = ta.value; dirty = true; };
     new ResizeObserver(() => drawLinks()).observe(el);
-    el.querySelector('[data-a]').onpointerdown = e => {
+    el.querySelectorAll('.port').forEach(p => p.onpointerdown = e => {
       e.stopPropagation();
       drag(m => { const a = box(s), q = pt(m); drawLinks([a.x, a.y, q.x, q.y]); },
         u => { const t = sceneAt(u); if (canLink(s, t)) { s.links.push({ to: t }); dirty = true; } drawLinks(); });
-    };
+    });
     el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
       const j = i + +b.dataset.m;
       if (j < 0 || j >= scenes.length) return;
@@ -379,21 +398,30 @@ function render() {
       dirty = true;
       render();
     });
-    el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); scenes.forEach(o => o.links = o.links.filter(l => l.to !== s)); sel = null; dirty = true; render(); };
+    el.querySelector('[data-d]').onclick = () => { scenes.splice(i, 1); scenes.forEach(o => o.links = o.links.filter(l => l.to !== s)); picked.delete(s); sel = null; dirty = true; render(); };
     el.onpointerdown = e => {
       if (e.target.closest('textarea, input, button, label, audio, select')) return;
-      const dx = e.clientX / scale - s.x, dy = e.clientY / scale - s.y;
+      if (e.ctrlKey) { picked.has(s) ? picked.delete(s) : picked.add(s); el.classList.toggle('picked'); return; }
+      if (!picked.has(s)) { picked.clear(); board.querySelectorAll('.picked').forEach(p => p.classList.remove('picked')); }
+      const group = picked.has(s) ? [...picked] : [s], all = board.querySelectorAll('.scene');
+      const from = group.map(g => [g.x, g.y, all[scenes.indexOf(g)]]);
+      const x0 = e.clientX / scale, y0 = e.clientY / scale, minX = Math.min(...group.map(g => g.x)), minY = Math.min(...group.map(g => g.y));
       el.setPointerCapture(e.pointerId);
-      el.style.zIndex = 1;
+      from.forEach(([, , ge]) => ge.classList.add('lift'));
+      let still;
+      const tilt = d => from.forEach(([, , ge]) => ge.style.setProperty('--tilt', d + 'deg'));
       el.onpointermove = m => {
-        s.x = Math.max(0, m.clientX / scale - dx);
-        s.y = Math.max(0, m.clientY / scale - dy);
-        el.style.left = s.x + 'px';
-        el.style.top = s.y + 'px';
+        // the card leans into the drag like a held sheet of paper, then straightens when the mouse stops
+        tilt(Math.max(-10, Math.min(10, m.movementX * 0.8)));
+        clearTimeout(still);
+        still = setTimeout(() => tilt(0), 90);
+        // clamp the shared offset, not each scene, so the group keeps its shape at the board edge
+        const dx = Math.max(-minX, m.clientX / scale - x0), dy = Math.max(-minY, m.clientY / scale - y0);
+        from.forEach(([x, y, ge], k) => { group[k].x = x + dx; group[k].y = y + dy; ge.style.left = group[k].x + 'px'; ge.style.top = group[k].y + 'px'; });
         dirty = true;
         drawLinks();
       };
-      el.onpointerup = () => { el.onpointermove = null; el.style.zIndex = ''; };
+      el.onpointerup = () => { el.onpointermove = null; clearTimeout(still); from.forEach(([, , ge]) => { ge.classList.remove('lift'); ge.style.removeProperty('--tilt'); }); };
     };
     board.append(el);
   });
@@ -407,7 +435,6 @@ document.getElementById('add').onchange = async e => {
   const files = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   for (const f of files) {
     const s = { img: await readAs(f, 'readAsDataURL'), text: '', sound: '', links: [] };
-    scenes.at(-1)?.links.push({ to: s });
     scenes.push(s);
   }
   e.target.value = '';
@@ -415,6 +442,25 @@ document.getElementById('add').onchange = async e => {
   render();
 };
 
+document.getElementById('text').onclick = () => {
+  const s = { text: '', sound: '', links: [] }, last = scenes.at(-1);
+  if (last) { s.x = last.x + 300; s.y = last.y; }
+  scenes.push(s);
+  dirty = true;
+  render();
+};
+// same grid as the first placement in render(), but each row as tall as its tallest scene so nothing overlaps
+document.getElementById('align').onclick = () => {
+  const els = [...board.querySelectorAll('.scene')];
+  if (!els.length || !confirm(t('alignAsk'))) return;
+  for (let r = 0, y = 20; r < scenes.length; r += 5) {
+    scenes.slice(r, r + 5).forEach((s, c) => { s.x = 20 + c * 300; s.y = y; });
+    y += Math.max(...els.slice(r, r + 5).map(e => e.offsetHeight)) + 40;
+  }
+  dirty = true;
+  render();
+  scrollTo(0, 0);
+};
 const fail = err => { const m = /(bad\w+)(?::(.*))?$/.exec(err.message); alert(m ? t(m[1], m[2]) : err.message); };
 const toFile = () => scenes.map(s => ({ ...s, links: s.links.map(l => ({ ...l, to: scenes.indexOf(l.to) })) }));
 const fromFile = list => {
@@ -434,7 +480,7 @@ const setCurrent = n => {
 const nameEl = document.getElementById('name');
 const saveBtn = document.getElementById('save');
 const discard = () => !dirty || confirm(t('unsaved'));
-const load = s => { scenes = fromFile(s); sel = null; dirty = false; render(); };
+const load = s => { scenes = fromFile(s); sel = null; picked.clear(); dirty = false; render(); };
 
 saveBtn.onclick = async () => {
   const name = nameEl.value.trim();

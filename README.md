@@ -33,24 +33,27 @@ Il risultato finisce nella cartella `release/`:
 | Cosa vuoi fare | Come |
 |---|---|
 | Aggiungere immagini | **+ Immagini** (puoi sceglierne tante insieme; vengono ordinate per nome file) |
+| Aggiungere un nodo senza immagine (sceneggiatura, nota) | **+ Testo**: compare accanto all'ultimo nodo; non serve archetipo né emozione |
 | Spostare una scena | trascinala tenendo premuto sull'immagine o sul titolo |
+| Spostare più scene insieme | **Ctrl + clic** su ognuna (bordo blu), poi trascinane una; clic sul piano vuoto per deselezionare |
+| Rimettere in ordine le scene sparse | **Allinea**: griglia di 5 per riga, nell'ordine dei numeri delle scene |
 | Scrivere un commento | scrivi nel riquadro sotto l'immagine |
 | Cambiare il numero della scena | **◀ ▶** |
 | Eliminare una scena | **✕** sotto la scena |
 
 ### 2. Le frecce
 
-Quando aggiungi immagini, ognuna viene collegata alla precedente. Poi puoi cambiare ogni freccia una per una:
+Le frecce non si creano da sole: le colleghi tu, scena per scena.
 
 | Cosa vuoi fare | Come |
 |---|---|
-| Creare una freccia | trascina il pulsante **↗** di una scena e rilascialo sopra un'altra scena |
+| Creare una freccia | passa il mouse su una scena, trascina uno dei **pallini blu** ai lati e rilascialo sopra un'altra scena |
 | Selezionare una freccia | cliccaci sopra: diventa blu e compaiono i pallini |
 | Curvarla | trascina il pallino blu centrale |
 | Cambiare partenza o arrivo | trascina il pallino blu all'inizio o alla fine su un'altra scena |
 | Eliminarla | clicca il pallino rosso, oppure premi `Canc` |
 
-Una freccia cancellata si ricrea con **↗**.
+Una freccia cancellata si ricrea dai pallini.
 
 ### 3. Salvare e riaprire
 
