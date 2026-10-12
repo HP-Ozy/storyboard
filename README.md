@@ -79,3 +79,96 @@ Ogni progetto è una cartella normale (`project.json` + `images/`): puoi copiarl
 - Non c'è salvataggio automatico. Se chiudi con modifiche non salvate, il programma te lo chiede.
 - Se le scene sono molto distanti, nel PDF il testo diventa piccolo: avvicinale prima di esportare.
 - Se due scene sono quasi attaccate, la freccia tra loro non viene disegnata.
+
+## Contribuire
+
+Il ramo `main` è protetto: **non si può pushare direttamente**. Ogni modifica passa da un ramo separato e da una **Pull Request**, che viene revisionata e approvata prima di entrare in `main`.
+
+### 1. Parti da `main` aggiornato
+
+```bash
+git checkout main
+git pull
+```
+
+### 2. Crea un ramo per la tua modifica
+
+```bash
+git checkout -b feature/nome-modifica
+```
+
+Usa un nome che dica cosa fai:
+
+| Tipo di modifica | Esempio di nome |
+|---|---|
+| Nuova funzione | `feature/zoom-piano` |
+| Correzione di un errore | `fix/frecce-pdf` |
+| Solo documentazione | `docs/readme-linux` |
+
+### 3. Lavora e fai i commit
+
+```bash
+git add .
+git commit -m "Descrizione breve di cosa hai cambiato"
+```
+
+Puoi fare più commit sullo stesso ramo.
+
+### 4. Pubblica il ramo
+
+```bash
+git push -u origin feature/nome-modifica
+```
+
+I push successivi sullo stesso ramo: basta `git push`.
+
+### 5. Apri la Pull Request
+
+Su GitHub compare il banner **Compare & pull request**: cliccalo.
+In alternativa: **Pull requests** → **New pull request** → base `main`, compare il tuo ramo.
+
+Nella descrizione scrivi:
+
+- cosa hai cambiato
+- perché
+- come provarlo (es. "aggiungi 3 immagini e esporta il PDF")
+
+Poi **Create pull request**.
+
+### 6. Revisione
+
+| Cosa succede | Cosa fai |
+|---|---|
+| La PR viene **approvata** | viene fatto il merge in `main`, non devi fare altro |
+| Vengono **chieste modifiche** | correggi sullo stesso ramo, fai commit e `git push`: la PR si aggiorna da sola |
+
+Se aggiungi commit dopo un'approvazione, l'approvazione decade e serve una nuova revisione.
+
+### 7. Dopo il merge
+
+```bash
+git checkout main
+git pull
+git branch -d feature/nome-modifica
+```
+
+Per la modifica successiva riparti dal punto 1.
+
+### Se `main` è cambiato mentre lavoravi
+
+Se GitHub segnala conflitti nella PR:
+
+```bash
+git checkout main
+git pull
+git checkout feature/nome-modifica
+git merge main
+```
+
+Risolvi i conflitti nei file segnalati, poi:
+
+```bash
+git add .
+git commit
+git push
+```
