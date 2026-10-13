@@ -3,7 +3,11 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 export interface Link { to: number; bx?: number; by?: number }
-export interface Scene { img?: string; title?: string; text: string; sound?: string; audio?: string; x?: number; y?: number; links?: Link[]; tags?: number[]; chars?: number[]; feels?: number[] }
+const lists = ['tags', 'chars', 'feels', 'actors', 'gestures', 'actions'] as const;
+export type Scene = { img?: string; title?: string; text: string; sound?: string; audio?: string; x?: number; y?: number; links?: Link[]; does?: Record<number, string>; model?: number } & { [K in typeof lists[number]]?: number[] };
+// project-wide library (actors, gestures, actions) that scenes point to by index
+export interface Item { img?: string; name: string; text: string }
+export type Lib = Record<string, Item[]>;
 
 const extOf: Record<string, string> = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp', 'svg+xml': 'svg', bmp: 'bmp', mpeg: 'mp3', wav: 'wav', ogg: 'ogg', flac: 'flac', webm: 'weba', 'x-m4a': 'm4a', mp4: 'm4a' };
 const mimeOf: Record<string, string> = Object.fromEntries(Object.entries(extOf).map(([m, e]) => [e, m]));
@@ -43,20 +47,29 @@ export async function listProjects(root: string) {
 
 export const deleteProject = (root: string, name: string) => fs.rm(projectDir(root, name), { recursive: true });
 
-export async function writeProject(dir: string, scenes: Scene[]) {
+export async function writeProject(dir: string, scenes: Scene[], lib: Lib = {}) {
   for (const f of Object.values(folder)) await fs.mkdir(path.join(dir, f), { recursive: true });
   const out = [];
-  for (const s of scenes) out.push({ image: s.img ? await store(dir, s.img, 'image') : undefined, title: s.title || undefined, text: s.text, sound: s.sound, audio: s.audio ? await store(dir, s.audio, 'audio') : undefined, x: s.x, y: s.y, links: s.links, tags: s.tags?.length ? s.tags : undefined, chars: s.chars?.length ? s.chars : undefined, feels: s.feels?.length ? s.feels : undefined });
+  for (const s of scenes) out.push({ image: s.img ? await store(dir, s.img, 'image') : undefined, title: s.title || undefined, text: s.text, sound: s.sound, audio: s.audio ? await store(dir, s.audio, 'audio') : undefined, x: s.x, y: s.y, links: s.links, model: s.model, does: s.does && Object.keys(s.does).length ? s.does : undefined, ...Object.fromEntries(lists.filter(f => s[f]?.length).map(f => [f, s[f]])) });
+  const outLib: Record<string, { image?: string; name: string; text: string }[]> = {};
+  for (const [k, items] of Object.entries(lib)) {
+    outLib[k] = [];
+    for (const x of items) outLib[k].push({ image: x.img ? await store(dir, x.img, 'image') : undefined, name: x.name, text: x.text });
+  }
   const json = path.join(dir, 'project.json');
-  await fs.writeFile(json + '.tmp', JSON.stringify({ version: 1, scenes: out }, null, 2));
+  await fs.writeFile(json + '.tmp', JSON.stringify({ version: 1, scenes: out, lib: outLib }, null, 2));
   await fs.rename(json + '.tmp', json);
-  const keep = new Set(out.flatMap(s => [s.image, s.audio]).filter(Boolean).map(f => path.basename(f!)));
+  const keep = new Set([...out.flatMap(s => [s.image, s.audio]), ...Object.values(outLib).flat().map(x => x.image)].filter(Boolean).map(f => path.basename(f!)));
   for (const f of Object.values(folder)) for (const n of await fs.readdir(path.join(dir, f))) if (own.test(n) && !keep.has(n)) await fs.unlink(path.join(dir, f, n));
 }
 
-export async function readProject(dir: string): Promise<Scene[]> {
-  const { scenes } = JSON.parse(await fs.readFile(path.join(dir, 'project.json'), 'utf8'));
-  return Promise.all(scenes.map(async (s: { image?: string; title?: string; text?: string; sound?: string; audio?: string; x?: number; y?: number; links?: Link[]; tags?: number[]; chars?: number[]; feels?: number[] }) => ({
-    ...(s.image && { img: await dataUrl(dir, s.image, 'image') }), ...(s.title && { title: s.title }), text: s.text ?? '', sound: s.sound ?? '', ...(s.audio && { audio: await dataUrl(dir, s.audio, 'audio') }), x: s.x, y: s.y, links: s.links, ...(s.tags && { tags: s.tags }), ...(s.chars && { chars: s.chars }), ...(s.feels && { feels: s.feels }),
-  })));
+export async function readProject(dir: string): Promise<{ scenes: Scene[]; lib: Lib }> {
+  const { scenes, lib = {} } = JSON.parse(await fs.readFile(path.join(dir, 'project.json'), 'utf8'));
+  const outLib: Lib = {};
+  for (const [k, items] of Object.entries(lib as Record<string, { image?: string; name?: string; text?: string }[]>)) {
+    outLib[k] = await Promise.all(items.map(async x => ({ ...(x.image && { img: await dataUrl(dir, x.image, 'image') }), name: x.name ?? '', text: x.text ?? '' })));
+  }
+  return { lib: outLib, scenes: await Promise.all(scenes.map(async (s: Scene & { image?: string }) => ({
+    ...(s.image && { img: await dataUrl(dir, s.image, 'image') }), ...(s.title && { title: s.title }), text: s.text ?? '', sound: s.sound ?? '', ...(s.audio && { audio: await dataUrl(dir, s.audio, 'audio') }), x: s.x, y: s.y, links: s.links, ...(s.model != null && { model: s.model }), ...(s.does && { does: s.does }), ...Object.fromEntries(lists.filter(f => s[f]).map(f => [f, s[f]])),
+  }))) };
 }

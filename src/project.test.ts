@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { deleteProject, listProjects, projectDir, readProject, writeProject } from './project';
+import { deleteProject, listProjects, projectDir, readProject, Scene, writeProject } from './project';
 
 (async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'storyboard-'));
@@ -10,21 +10,23 @@ import { deleteProject, listProjects, projectDir, readProject, writeProject } fr
   await mkdir(path.join(dir, 'images'));
   await writeFile(path.join(dir, 'images', 'foto.jpg'), 'utente');
 
-  const scenes = [
+  const scenes: Scene[] = [
     { img: img('png', 'a'), title: 'Apertura', text: 'uno', sound: 'pioggia, synth cupo', audio: img('mpeg', 'm', 'audio'), x: 10, y: 20, links: [{ to: 1 }, { to: 2, bx: 30, by: -15 }], tags: [0, 6], chars: [3], feels: [1, 5] },
     { img: img('jpeg', 'b'), text: 'due\nriga', sound: '', x: 300, y: 40, links: [{ to: 2 }] },
     { img: img('png', 'a'), text: 'tre', sound: '', audio: img('wav', 'w', 'audio'), x: 1, y: 2, links: [{ to: 3 }] },
-    { title: 'Nota', text: 'solo testo', sound: '', x: 5, y: 6, links: [] },
+    { title: 'Nota', text: 'solo testo', sound: '', x: 5, y: 6, links: [], model: 0 },
   ];
-  await writeProject(dir, scenes);
-  assert.deepEqual(await readProject(dir), scenes);
-  assert.equal((await readdir(path.join(dir, 'images'))).length, 3);
+  const lib = { actors: [{ img: img('png', 'c'), name: 'Ada', text: 'capelli rossi' }], gestures: [{ name: 'saluta', text: '' }] };
+  scenes[0] = { ...scenes[0], actors: [0], gestures: [0], does: { 0: 'apre la porta e sorride' } };
+  await writeProject(dir, scenes, lib);
+  assert.deepEqual(await readProject(dir), { scenes, lib });
+  assert.equal((await readdir(path.join(dir, 'images'))).length, 4);
   assert.equal((await readdir(path.join(dir, 'audio'))).length, 2);
   await assert.rejects(writeProject(dir, [{ img: img('png', 'a'), text: '', audio: img('png', 'a') }]));
   await writeProject(dir, scenes);
 
   await writeProject(dir, scenes.slice(1, 2));
-  assert.deepEqual(await readProject(dir), scenes.slice(1, 2));
+  assert.deepEqual(await readProject(dir), { scenes: scenes.slice(1, 2), lib: {} });
   assert.equal((await readdir(path.join(dir, 'audio'))).length, 0);
   const left = await readdir(path.join(dir, 'images'));
   assert.equal(left.length, 2);

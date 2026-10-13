@@ -41,6 +41,18 @@ Il risultato finisce nella cartella `release/`:
 | Cambiare il numero della scena | **◀ ▶** |
 | Eliminare una scena | **✕** sotto la scena |
 
+### Attori, gesti e azioni
+
+Il pannello in basso a sinistra raccoglie gli elementi che si ripetono in tutto il progetto.
+
+| Cosa vuoi fare | Come |
+|---|---|
+| Creare un attore, un gesto o un'azione | apri la sezione e premi **+ Aggiungi**, poi scrivi nome e descrizione; con **Immagine** alleghi il riferimento (es. il model sheet del personaggio) |
+| Metterlo in una scena | **+ Aggiungi** sotto la scena → scegli dal gruppo Attori, Gesti o Azioni |
+| Scrivere cosa fa un attore in quella scena | dopo averlo scelto compare un riquadro dedicato sotto la scena |
+| Vedere l'attore in 3D sul piano | dopo avergli dato un'**Immagine** premi **3D sul piano**: compare un nodo col modello, trascinalo dentro per ruotarlo. Funziona meglio con un PNG a sfondo trasparente o un'immagine su sfondo uniforme. È la sagoma "gonfiata" dell'immagine, non una ricostruzione: il retro è lo specchio del davanti |
+| Eliminarlo | **✕** nel pannello: viene tolto anche da tutte le scene |
+
 ### 2. Le frecce
 
 Le frecce non si creano da sole: le colleghi tu, scena per scena.
