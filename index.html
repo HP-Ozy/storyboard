@@ -35,6 +35,10 @@
   button, label { background: #383c48; color: #f2f2f2; border: 1px solid #5a5f6c; padding: 5px 12px; cursor: pointer; border-radius: 8px; }
   button:hover, label:hover { background: #454a58; border-color: #4af; }
   #save { background: #1f4f7a; border-color: #4af; }
+  #new { background: #2f7a3a; border-color: #6fcf7f; color: #fff; font-weight: 700; }
+  #new:hover { background: #3a9147; }
+  #calendar [data-i=close] { background: #8a2a2a; border-color: #ff6b6b; color: #fff; font-weight: 700; }
+  #calendar [data-i=close]:hover { background: #a83434; }
   input[type=file] { display: none; }
   dialog { background: #24272e; color: #eee; border: 1px solid #444; min-width: 480px; border-radius: 14px; padding: 18px; }
   dialog::backdrop { background: #0008; }
@@ -139,12 +143,12 @@
   }
 </style>
 <header>
+  <button id="new" data-i="new"></button>
   <label><span data-i="images"></span><input id="add" type="file" accept="image/*" multiple></label>
   <button id="text" data-i="text"></button>
   <button id="align" data-i="align"></button>
   <input id="name" data-ip="name">
   <button id="save" data-i="save"></button>
-  <button id="new" data-i="new"></button>
   <button id="arch" data-i="arch"></button>
   <button id="exp" data-i="exp"></button>
   <button id="pdf" data-i="pdf"></button>
