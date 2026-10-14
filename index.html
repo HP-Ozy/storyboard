@@ -476,7 +476,9 @@ function dropZone(el, slot) {
   };
 }
 function drawCal() {
-  document.querySelector('#calSide > div').replaceChildren(...projects.map(n => chip(n)));
+  // a story planned anywhere leaves the list; removing it with ✕ brings it back
+  const placed = new Set(Object.keys(cal).filter(k => k.startsWith('s ')).flatMap(k => cal[k]));
+  document.querySelector('#calSide > div').replaceChildren(...projects.filter(n => !placed.has(n)).map(n => chip(n)));
   // redrawing empties the grid, which would reset the scroll to midnight
   const grid = document.getElementById('calGrid'), now = new Date(), top = grid.scrollTop;
   const days = [...Array(7)].map((_, i) => new Date(at.getFullYear(), at.getMonth(), at.getDate() - (at.getDay() + 6) % 7 + i));
