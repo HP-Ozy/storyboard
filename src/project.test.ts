@@ -18,15 +18,16 @@ import { deleteProject, listProjects, projectDir, readProject, Scene, writeProje
   ];
   const lib = { actors: [{ img: img('png', 'c'), name: 'Ada', text: 'capelli rossi' }], gestures: [{ name: 'saluta', text: '' }] };
   scenes[0] = { ...scenes[0], actors: [0], gestures: [0], does: { 0: 'apre la porta e sorride' } };
-  await writeProject(dir, scenes, lib);
-  assert.deepEqual(await readProject(dir), { scenes, lib });
+  const cal = { '2026-10-14 09': ['sopralluogo', 'casting'] };
+  await writeProject(dir, scenes, lib, cal);
+  assert.deepEqual(await readProject(dir), { scenes, lib, cal });
   assert.equal((await readdir(path.join(dir, 'images'))).length, 4);
   assert.equal((await readdir(path.join(dir, 'audio'))).length, 2);
   await assert.rejects(writeProject(dir, [{ img: img('png', 'a'), text: '', audio: img('png', 'a') }]));
   await writeProject(dir, scenes);
 
   await writeProject(dir, scenes.slice(1, 2));
-  assert.deepEqual(await readProject(dir), { scenes: scenes.slice(1, 2), lib: {} });
+  assert.deepEqual(await readProject(dir), { scenes: scenes.slice(1, 2), lib: {}, cal: {} });
   assert.equal((await readdir(path.join(dir, 'audio'))).length, 0);
   const left = await readdir(path.join(dir, 'images'));
   assert.equal(left.length, 2);

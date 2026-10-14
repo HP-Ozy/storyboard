@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
   list: () => ipcRenderer.invoke('list'),
-  save: (name: string, scenes: unknown, lib: unknown) => ipcRenderer.invoke('save', name, scenes, lib),
+  save: (name: string, scenes: unknown, lib: unknown, cal: unknown) => ipcRenderer.invoke('save', name, scenes, lib, cal),
   load: (name: string) => ipcRenderer.invoke('load', name),
   remove: (name: string) => ipcRenderer.invoke('remove', name),
   folder: () => ipcRenderer.invoke('folder'),

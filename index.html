@@ -83,6 +83,19 @@
   #lib .item img:not([src]) { display: none; }
   #lib input, #lib textarea { background: #1b1d22; color: #e6e6e6; border: 1px solid #4a4e57; border-radius: 6px; padding: 4px; font: inherit; }
   #lib textarea { min-height: 40px; resize: vertical; }
+  #calendar { width: 92vw; }
+  #calendar > div:first-child { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  #calendar > div:first-child b { flex: 1; text-align: center; }
+  #calGrid { position: relative; display: grid; grid-template-columns: 56px repeat(7, minmax(0, 1fr)); gap: 2px; max-height: 75vh; overflow: auto; scrollbar-width: thin; scrollbar-color: #44474e transparent; }
+  #calGrid > b { position: sticky; top: 0; z-index: 1; padding: 6px; background: #2a2d35; border-radius: 6px; text-align: center; font-weight: 600; }
+  #calGrid > b.now { color: #cfe6ff; box-shadow: inset 0 -2px #4af; }
+  #calGrid > span { color: #888; font-size: 12px; text-align: right; padding: 4px 6px; }
+  #calGrid > div { min-height: 30px; padding: 2px; display: flex; flex-direction: column; gap: 2px; background: #1b1d22; border-radius: 6px; cursor: copy; }
+  #calGrid > div:hover { box-shadow: inset 0 0 0 1px #4af; }
+  .flag { display: flex; align-items: center; gap: 2px; padding-left: 4px; background: #332b1f; border: 1px solid #6e5836; border-radius: 6px; cursor: default; }
+  .flag::before { content: '⚑'; color: #f3b94a; }
+  .flag input { flex: 1; min-width: 0; background: transparent; color: #f3dcb2; border: 0; font: 12px system-ui; padding: 3px 2px; outline: none; }
+  .flag button { padding: 0 6px; border: 0; background: transparent; }
   @media print {
     #story, #lib, .story select, .story button::after { display: none; }
     .story button, .story button[class] { background: #fff; color: #000; border-color: #999; }
@@ -110,10 +123,12 @@
   <button id="arch" data-i="arch"></button>
   <button id="exp" data-i="exp"></button>
   <button id="pdf" data-i="pdf"></button>
+  <button id="calBtn" data-i="cal"></button>
   <span id="cur"></span>
   <select id="lang"><option value="it">IT</option><option value="en">EN</option><option value="es">ES</option></select>
 </header>
 <dialog id="archive"><b data-i="archTitle"></b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()" data-i="close"></button></dialog>
+<dialog id="calendar"><div><button id="calPrev">◀</button><button id="calToday" data-i="today"></button><button id="calNext">▶</button><b id="calWeek"></b><button onclick="calendar.close()" data-i="close"></button></div><div id="calGrid"></div></dialog>
 <details id="lib" open><summary data-i="lib"></summary><div></div></details>
 <details id="story" open><summary></summary><div></div></details>
 <div id="board">
@@ -122,7 +137,7 @@
 <script>
 const L = {
   it: {
-    images: '+ Immagini', text: '+ Testo', align: 'Allinea', alignAsk: 'Rimettere le scene in griglia secondo il loro numero? La disposizione attuale andrà persa.', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA',
+    images: '+ Immagini', text: '+ Testo', align: 'Allinea', alignAsk: 'Rimettere le scene in griglia secondo il loro numero? La disposizione attuale andrà persa.', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA', cal: 'Calendario', today: 'Oggi', calHint: 'Clic per aggiungere un flag',
     newCur: 'Nuovo progetto · non salvato', working: n => `Stai lavorando su: ${n}`, archTitle: 'Archivio progetti', close: 'Chiudi',
     drop: 'Rilascia il file per aprire il progetto', att: 'Traccia musicale allegata', delLink: 'Elimina freccia', scene: i => `Scena ${i}`, comment: 'Commento...',
     sndPh: 'Genere, atmosfera, effetti sonori...', attach: 'Allega traccia', rmTrack: 'Rimuovi traccia', linkHint: "Trascina su un'altra scena per collegarla",
@@ -169,7 +184,7 @@ const L = {
     ],
   },
   en: {
-    images: '+ Images', text: '+ Text', align: 'Align', alignAsk: 'Put the scenes back in a grid by their number? The current layout will be lost.', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI',
+    images: '+ Images', text: '+ Text', align: 'Align', alignAsk: 'Put the scenes back in a grid by their number? The current layout will be lost.', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI', cal: 'Calendar', today: 'Today', calHint: 'Click to add a flag',
     newCur: 'New project · not saved', working: n => `Working on: ${n}`, archTitle: 'Project archive', close: 'Close',
     drop: 'Drop the file to open the project', att: 'Music track attached', delLink: 'Delete arrow', scene: i => `Scene ${i}`, comment: 'Comment...',
     sndPh: 'Genre, mood, sound effects...', attach: 'Attach track', rmTrack: 'Remove track', linkHint: 'Drag onto another scene to link it',
@@ -216,7 +231,7 @@ const L = {
     ],
   },
   es: {
-    images: '+ Imágenes', text: '+ Texto', align: 'Alinear', alignAsk: '¿Volver a colocar las escenas en cuadrícula según su número? La disposición actual se perderá.', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA',
+    images: '+ Imágenes', text: '+ Texto', align: 'Alinear', alignAsk: '¿Volver a colocar las escenas en cuadrícula según su número? La disposición actual se perderá.', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA', cal: 'Calendario', today: 'Hoy', calHint: 'Clic para añadir una bandera',
     newCur: 'Proyecto nuevo · sin guardar', working: n => `Trabajando en: ${n}`, archTitle: 'Archivo de proyectos', close: 'Cerrar',
     drop: 'Suelta el archivo para abrir el proyecto', att: 'Pista musical adjunta', delLink: 'Eliminar flecha', scene: i => `Escena ${i}`, comment: 'Comentario...',
     sndPh: 'Género, ambiente, efectos de sonido...', attach: 'Adjuntar pista', rmTrack: 'Quitar pista', linkHint: 'Arrastra sobre otra escena para conectarla',
@@ -276,6 +291,7 @@ function applyLang() {
   setCurrent(current);
   render();
   drawLib();
+  if (calendar.open) drawCal();
   api.lang(lang);
 }
 const GROUPS = [['tags', 'story', 'all'], ['chars', 'chars', 'scene'], ['feels', 'feels', 'scene']];
@@ -388,6 +404,50 @@ function drawLib() {
   });
 }
 let dirty = false;
+// flags per "YYYY-MM-DD HH" slot; week is the offset from the current week
+let cal = {}, week = 0;
+const pad2 = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const calOut = () => Object.fromEntries(Object.entries(cal).map(([k, v]) => [k, v.filter(x => x.trim())]).filter(([, v]) => v.length));
+function drawCal() {
+  // redrawing empties the grid, which would reset the scroll to midnight
+  const grid = document.getElementById('calGrid'), now = new Date(), top = grid.scrollTop;
+  const days = [...Array(7)].map((_, i) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7 + week * 7 + i));
+  const fmt = (d, o) => d.toLocaleDateString(lang, o);
+  document.getElementById('calWeek').textContent = `${fmt(days[0], { day: 'numeric', month: 'long' })} – ${fmt(days[6], { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  grid.replaceChildren(document.createElement('span'), ...days.map(d => Object.assign(document.createElement('b'), { textContent: fmt(d, { weekday: 'short', day: 'numeric' }), className: ymd(d) === ymd(now) ? 'now' : '' })));
+  for (let h = 0; h < 24; h++) {
+    grid.append(Object.assign(document.createElement('span'), { textContent: `${pad2(h)}:00` }));
+    for (const d of days) {
+      const key = `${ymd(d)} ${pad2(h)}`, cell = document.createElement('div');
+      cell.title = t('calHint');
+      (cal[key] ?? []).forEach((txt, j) => {
+        const f = document.createElement('div');
+        f.className = 'flag';
+        f.innerHTML = `<input><button title="${t('del')}">✕</button>`;
+        const [inp, x] = f.children;
+        inp.value = inp.title = txt;
+        inp.oninput = () => { cal[key][j] = inp.title = inp.value; dirty = true; };
+        x.onclick = () => { cal[key].splice(j, 1); if (!cal[key].length) delete cal[key]; dirty = true; drawCal(); };
+        cell.append(f);
+      });
+      cell.onclick = e => { if (e.target !== cell) return; (cal[key] ??= []).push(''); dirty = true; drawCal(); grid.querySelector(`[data-k="${key}"] .flag:last-child input`).focus(); };
+      cell.dataset.k = key;
+      grid.append(cell);
+    }
+  }
+  grid.scrollTop = top;
+}
+document.getElementById('calBtn').onclick = () => {
+  week = 0;
+  drawCal();
+  calendar.showModal();
+  const grid = document.getElementById('calGrid');
+  grid.scrollTop = grid.children[8 + 8 * 8].offsetTop - grid.children[1].offsetHeight - 2;
+};
+document.getElementById('calPrev').onclick = () => { week--; drawCal(); };
+document.getElementById('calNext').onclick = () => { week++; drawCal(); };
+document.getElementById('calToday').onclick = () => { week = 0; drawCal(); };
 const board = document.getElementById('board');
 const links = document.querySelector('#links g');
 
@@ -600,7 +660,7 @@ const setCurrent = n => {
 const nameEl = document.getElementById('name');
 const saveBtn = document.getElementById('save');
 const discard = () => !dirty || confirm(t('unsaved'));
-const load = ({ scenes: s, lib: l = {} }) => { scenes = fromFile(s); lib = Object.fromEntries(LIBS.map(f => [f, l[f] ?? []])); sel = null; picked.clear(); dirty = false; render(); drawLib(); };
+const load = ({ scenes: s, lib: l = {}, cal: c = {} }) => { scenes = fromFile(s); cal = c; lib = Object.fromEntries(LIBS.map(f => [f, l[f] ?? []])); sel = null; picked.clear(); dirty = false; render(); drawLib(); };
 
 saveBtn.onclick = async () => {
   const name = nameEl.value.trim();
@@ -608,7 +668,7 @@ saveBtn.onclick = async () => {
   try {
     const same = n => n.toLowerCase() === name.toLowerCase();
     if (!same(current) && (await api.list()).some(p => same(p.name)) && !confirm(t('exists', name))) return;
-    await api.save(name, toFile(), lib);
+    await api.save(name, toFile(), lib, calOut());
     setCurrent(nameEl.value = name);
     dirty = false;
     saveBtn.textContent = t('saved');
@@ -661,7 +721,7 @@ function preparePrint() {
   return { w, h, undo: () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); board.style.zoom = scale; drawLinks(); } };
 }
 
-const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, scenes: toFile(), lib });
+const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, scenes: toFile(), lib, cal: calOut() });
 document.getElementById('exp').onclick = () => api.exportFile(nameEl.value.trim() || current, payload()).catch(fail);
 
 document.getElementById('pdf').onclick = () => {
