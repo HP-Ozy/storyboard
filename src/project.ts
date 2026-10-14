@@ -8,7 +8,7 @@ export type Scene = { img?: string; title?: string; text: string; sound?: string
 // project-wide library (actors, gestures, actions) that scenes point to by index
 export interface Item { img?: string; name: string; text: string }
 export type Lib = Record<string, Item[]>;
-// flags per day and hour slot, keyed "YYYY-MM-DD HH"
+// flags per hour slot ("YYYY-MM-DD HH") and saved project names planned per day ("YYYY-MM-DD")
 export type Cal = Record<string, string[]>;
 
 const extOf: Record<string, string> = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp', 'svg+xml': 'svg', bmp: 'bmp', mpeg: 'mp3', wav: 'wav', ogg: 'ogg', flac: 'flac', webm: 'weba', 'x-m4a': 'm4a', mp4: 'm4a' };

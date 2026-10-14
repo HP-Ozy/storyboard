@@ -86,12 +86,29 @@
   #calendar { width: 92vw; }
   #calendar > div:first-child { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   #calendar > div:first-child b { flex: 1; text-align: center; }
-  #calGrid { position: relative; display: grid; grid-template-columns: 56px repeat(7, minmax(0, 1fr)); gap: 2px; max-height: 75vh; overflow: auto; scrollbar-width: thin; scrollbar-color: #44474e transparent; }
+  #calGrid { position: relative; display: grid; gap: 2px; max-height: 70vh; overflow: auto; scrollbar-width: thin; scrollbar-color: #44474e transparent; }
   #calGrid > b { position: sticky; top: 0; z-index: 1; padding: 6px; background: #2a2d35; border-radius: 6px; text-align: center; font-weight: 600; }
   #calGrid > b.now { color: #cfe6ff; box-shadow: inset 0 -2px #4af; }
   #calGrid > span { color: #888; font-size: 12px; text-align: right; padding: 4px 6px; }
-  #calGrid > div { min-height: 30px; padding: 2px; display: flex; flex-direction: column; gap: 2px; background: #1b1d22; border-radius: 6px; cursor: copy; }
-  #calGrid > div:hover { box-shadow: inset 0 0 0 1px #4af; }
+  #calGrid.week { grid-template-columns: 56px repeat(7, minmax(0, 1fr)); }
+  #calGrid.year { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  #calViews button.on { background: #1f4f7a; border-color: #4af; }
+  #calGrid .stories { cursor: default; }
+  .stories button { padding: 2px 6px; font-size: 12px; text-align: left; background: #1f2c38; border-color: #36597a; color: #cfe6ff; }
+  .stories select { background: #25272c; color: #aaa; border: 1px dashed #44474e; border-radius: 999px; padding: 2px 6px; font-size: 12px; }
+  .mon > b { display: block; margin-bottom: 4px; text-transform: capitalize; }
+  .mon > div { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+  .mon small { color: #888; font-size: 11px; text-align: center; }
+  .mon i { display: flex; flex-direction: column; gap: 2px; min-height: 18px; padding: 3px; border-radius: 4px; font: 11px system-ui; cursor: zoom-in; }
+  .mon.big i { min-height: 80px; font-size: 13px; }
+  .mon i:hover { box-shadow: inset 0 0 0 1px #4af; }
+  .mon i.now { box-shadow: inset 0 0 0 2px #4af; }
+  .mon em { overflow: hidden; padding: 1px 4px; background: #332b1f; border-radius: 4px; color: #f3dcb2; font: 11px system-ui; white-space: nowrap; text-overflow: ellipsis; }
+  .mon em.st { background: #1f2c38; color: #cfe6ff; }
+  #calLegend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; color: #aaa; font-size: 12px; }
+  #calLegend i { display: inline-block; width: 12px; height: 12px; margin-right: 4px; border-radius: 3px; vertical-align: -2px; }
+  #calGrid.week > div { min-height: 30px; padding: 2px; display: flex; flex-direction: column; gap: 2px; background: #1b1d22; border-radius: 6px; cursor: copy; }
+  #calGrid.week > div:not(.stories):hover { box-shadow: inset 0 0 0 1px #4af; }
   .flag { display: flex; align-items: center; gap: 2px; padding-left: 4px; background: #332b1f; border: 1px solid #6e5836; border-radius: 6px; cursor: default; }
   .flag::before { content: '⚑'; color: #f3b94a; }
   .flag input { flex: 1; min-width: 0; background: transparent; color: #f3dcb2; border: 0; font: 12px system-ui; padding: 3px 2px; outline: none; }
@@ -128,7 +145,7 @@
   <select id="lang"><option value="it">IT</option><option value="en">EN</option><option value="es">ES</option></select>
 </header>
 <dialog id="archive"><b data-i="archTitle"></b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()" data-i="close"></button></dialog>
-<dialog id="calendar"><div><button id="calPrev">◀</button><button id="calToday" data-i="today"></button><button id="calNext">▶</button><b id="calWeek"></b><button onclick="calendar.close()" data-i="close"></button></div><div id="calGrid"></div></dialog>
+<dialog id="calendar"><div><button id="calPrev">◀</button><button id="calToday" data-i="today"></button><button id="calNext">▶</button><b id="calWeek"></b><span id="calViews"><button data-v="week" data-i="vWeek"></button> <button data-v="month" data-i="vMonth"></button> <button data-v="year" data-i="vYear"></button></span><button onclick="calendar.close()" data-i="close"></button></div><div id="calGrid"></div><div id="calLegend"></div></dialog>
 <details id="lib" open><summary data-i="lib"></summary><div></div></details>
 <details id="story" open><summary></summary><div></div></details>
 <div id="board">
@@ -137,7 +154,7 @@
 <script>
 const L = {
   it: {
-    images: '+ Immagini', text: '+ Testo', align: 'Allinea', alignAsk: 'Rimettere le scene in griglia secondo il loro numero? La disposizione attuale andrà persa.', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA', cal: 'Calendario', today: 'Oggi', calHint: 'Clic per aggiungere un flag',
+    images: '+ Immagini', text: '+ Testo', align: 'Allinea', alignAsk: 'Rimettere le scene in griglia secondo il loro numero? La disposizione attuale andrà persa.', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA', cal: 'Calendario', today: 'Oggi', calHint: 'Clic per aggiungere un flag', heat: ['Basso', 'Medio-basso', 'Medio', 'Medio-alto', 'Alto', 'Molto alto'], heatOf: l => `Potenziale di monetizzazione: ${l}`, vWeek: 'Settimana', vMonth: 'Mese', vYear: 'Anno', addStory: '+ Story', legHeat: 'Sfondo = potenziale di monetizzazione del mese:', legStory: "🎬 story = progetto salvato pianificato per quel giorno (scegli da '+ Story' nella vista Settimana)", legFlag: "⚑ flag = nota in un giorno e un'ora (in Anno il numero dice quanti)", legToday: 'bordo blu = oggi', legHelp: 'Ctrl + rotella o Settimana/Mese/Anno per zoomare · clic su un giorno per aprire la sua settimana · in Settimana clic su una cella vuota per aggiungere un flag, ✕ per toglierlo',
     newCur: 'Nuovo progetto · non salvato', working: n => `Stai lavorando su: ${n}`, archTitle: 'Archivio progetti', close: 'Chiudi',
     drop: 'Rilascia il file per aprire il progetto', att: 'Traccia musicale allegata', delLink: 'Elimina freccia', scene: i => `Scena ${i}`, comment: 'Commento...',
     sndPh: 'Genere, atmosfera, effetti sonori...', attach: 'Allega traccia', rmTrack: 'Rimuovi traccia', linkHint: "Trascina su un'altra scena per collegarla",
@@ -184,7 +201,7 @@ const L = {
     ],
   },
   en: {
-    images: '+ Images', text: '+ Text', align: 'Align', alignAsk: 'Put the scenes back in a grid by their number? The current layout will be lost.', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI', cal: 'Calendar', today: 'Today', calHint: 'Click to add a flag',
+    images: '+ Images', text: '+ Text', align: 'Align', alignAsk: 'Put the scenes back in a grid by their number? The current layout will be lost.', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI', cal: 'Calendar', today: 'Today', calHint: 'Click to add a flag', heat: ['Low', 'Medium-low', 'Medium', 'Medium-high', 'High', 'Very high'], heatOf: l => `Monetization potential: ${l}`, vWeek: 'Week', vMonth: 'Month', vYear: 'Year', addStory: '+ Story', legHeat: 'Background = monetization potential of the month:', legStory: "🎬 story = saved project planned for that day (pick it from '+ Story' in Week view)", legFlag: '⚑ flag = note on a day and hour (in Year the number says how many)', legToday: 'blue border = today', legHelp: 'Ctrl + wheel or Week/Month/Year to zoom · click a day to open its week · in Week click an empty cell to add a flag, ✕ to remove it',
     newCur: 'New project · not saved', working: n => `Working on: ${n}`, archTitle: 'Project archive', close: 'Close',
     drop: 'Drop the file to open the project', att: 'Music track attached', delLink: 'Delete arrow', scene: i => `Scene ${i}`, comment: 'Comment...',
     sndPh: 'Genre, mood, sound effects...', attach: 'Attach track', rmTrack: 'Remove track', linkHint: 'Drag onto another scene to link it',
@@ -231,7 +248,7 @@ const L = {
     ],
   },
   es: {
-    images: '+ Imágenes', text: '+ Texto', align: 'Alinear', alignAsk: '¿Volver a colocar las escenas en cuadrícula según su número? La disposición actual se perderá.', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA', cal: 'Calendario', today: 'Hoy', calHint: 'Clic para añadir una bandera',
+    images: '+ Imágenes', text: '+ Texto', align: 'Alinear', alignAsk: '¿Volver a colocar las escenas en cuadrícula según su número? La disposición actual se perderá.', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA', cal: 'Calendario', today: 'Hoy', calHint: 'Clic para añadir una bandera', heat: ['Bajo', 'Medio-bajo', 'Medio', 'Medio-alto', 'Alto', 'Muy alto'], heatOf: l => `Potencial de monetización: ${l}`, vWeek: 'Semana', vMonth: 'Mes', vYear: 'Año', addStory: '+ Story', legHeat: 'Fondo = potencial de monetización del mes:', legStory: "🎬 story = proyecto guardado planificado para ese día (elígelo en '+ Story' en la vista Semana)", legFlag: '⚑ bandera = nota en un día y una hora (en Año el número indica cuántas)', legToday: 'borde azul = hoy', legHelp: 'Ctrl + rueda o Semana/Mes/Año para hacer zoom · clic en un día para abrir su semana · en Semana clic en una celda vacía para añadir una bandera, ✕ para quitarla',
     newCur: 'Proyecto nuevo · sin guardar', working: n => `Trabajando en: ${n}`, archTitle: 'Archivo de proyectos', close: 'Cerrar',
     drop: 'Suelta el archivo para abrir el proyecto', att: 'Pista musical adjunta', delLink: 'Eliminar flecha', scene: i => `Escena ${i}`, comment: 'Comentario...',
     sndPh: 'Género, ambiente, efectos de sonido...', attach: 'Adjuntar pista', rmTrack: 'Quitar pista', linkHint: 'Arrastra sobre otra escena para conectarla',
@@ -404,18 +421,45 @@ function drawLib() {
   });
 }
 let dirty = false;
-// flags per "YYYY-MM-DD HH" slot; week is the offset from the current week
-let cal = {}, week = 0;
+// flags per "YYYY-MM-DD HH" slot, saved project names (stories) per "YYYY-MM-DD" day;
+// the calendar shows the week, month or year around the date `at`
+let cal = {}, view = 'week', at = new Date(), wheelAt = 0, projects = [];
+const VIEWS = ['week', 'month', 'year'];
 const pad2 = n => String(n).padStart(2, '0');
+// monetization potential per month (Jan..Dec), 0 = low .. 5 = very high, and its cell colour from cool blue to red
+const HEAT = [0, 0, 2, 2, 3, 2, 2, 1, 4, 4, 5, 5], HEAT_BG = ['#1b2a3d', '#1e2833', '#23242a', '#33242a', '#47222a', '#5e1b20'];
 const ymd = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const calOut = () => Object.fromEntries(Object.entries(cal).map(([k, v]) => [k, v.filter(x => x.trim())]).filter(([, v]) => v.length));
 function drawCal() {
   // redrawing empties the grid, which would reset the scroll to midnight
   const grid = document.getElementById('calGrid'), now = new Date(), top = grid.scrollTop;
-  const days = [...Array(7)].map((_, i) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7 + week * 7 + i));
+  const days = [...Array(7)].map((_, i) => new Date(at.getFullYear(), at.getMonth(), at.getDate() - (at.getDay() + 6) % 7 + i));
   const fmt = (d, o) => d.toLocaleDateString(lang, o);
+  grid.className = view;
+  document.querySelectorAll('#calViews button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+  document.getElementById('calLegend').innerHTML = `<span>${t('legHeat')}</span>${t('heat').map((l, i) => `<span><i style="background: ${HEAT_BG[i]}"></i>${l}</span>`).join('')}<span>${t('legStory')}</span><span>${t('legFlag')}</span><span>${t('legToday')}</span><span>${t('legHelp')}</span>`;
+  if (view !== 'week') {
+    document.getElementById('calWeek').textContent = view === 'month' ? fmt(at, { month: 'long', year: 'numeric' }) : at.getFullYear();
+    grid.replaceChildren(...(view === 'month' ? [monthBlock(at.getFullYear(), at.getMonth(), true)] : [...Array(12)].map((_, m) => monthBlock(at.getFullYear(), m))));
+    return grid.scrollTop = top;
+  }
   document.getElementById('calWeek').textContent = `${fmt(days[0], { day: 'numeric', month: 'long' })} – ${fmt(days[6], { day: 'numeric', month: 'long', year: 'numeric' })}`;
-  grid.replaceChildren(document.createElement('span'), ...days.map(d => Object.assign(document.createElement('b'), { textContent: fmt(d, { weekday: 'short', day: 'numeric' }), className: ymd(d) === ymd(now) ? 'now' : '' })));
+  grid.replaceChildren(document.createElement('span'), ...days.map(d => Object.assign(document.createElement('b'), { textContent: fmt(d, { weekday: 'short', day: 'numeric' }), className: ymd(d) === ymd(now) ? 'now' : '', title: t('heatOf', t('heat')[HEAT[d.getMonth()]]), style: `background: ${HEAT_BG[HEAT[d.getMonth()]]}` })));
+  grid.append(Object.assign(document.createElement('span'), { textContent: '🎬' }));
+  for (const d of days) {
+    const k = ymd(d), cell = document.createElement('div'), sel = document.createElement('select');
+    cell.className = 'stories';
+    cell.style.background = HEAT_BG[HEAT[d.getMonth()]];
+    (cal[k] ?? []).forEach((n, j) => {
+      const b = Object.assign(document.createElement('button'), { textContent: `🎬 ${n} ✕`, title: t('del') });
+      b.onclick = () => { cal[k].splice(j, 1); if (!cal[k].length) delete cal[k]; dirty = true; drawCal(); };
+      cell.append(b);
+    });
+    sel.append(new Option(t('addStory'), ''), ...projects.filter(n => !cal[k]?.includes(n)).map(n => new Option(n, n)));
+    sel.onchange = () => { (cal[k] ??= []).push(sel.value); dirty = true; drawCal(); };
+    cell.append(sel);
+    grid.append(cell);
+  }
   for (let h = 0; h < 24; h++) {
     grid.append(Object.assign(document.createElement('span'), { textContent: `${pad2(h)}:00` }));
     for (const d of days) {
@@ -433,21 +477,66 @@ function drawCal() {
       });
       cell.onclick = e => { if (e.target !== cell) return; (cal[key] ??= []).push(''); dirty = true; drawCal(); grid.querySelector(`[data-k="${key}"] .flag:last-child input`).focus(); };
       cell.dataset.k = key;
+      cell.style.background = HEAT_BG[HEAT[d.getMonth()]];
       grid.append(cell);
     }
   }
   grid.scrollTop = top;
 }
-document.getElementById('calBtn').onclick = () => {
-  week = 0;
+// one month as a 7-column grid of days; big = month view with the texts, otherwise just counts
+function monthBlock(y, m, big) {
+  const el = document.createElement('div'), first = new Date(y, m, 1), today = ymd(new Date());
+  el.className = big ? 'mon big' : 'mon';
+  el.title = t('heatOf', t('heat')[HEAT[m]]);
+  el.innerHTML = '<b></b><div></div>';
+  el.firstChild.textContent = first.toLocaleDateString(lang, { month: 'long' });
+  const g = el.lastChild;
+  // 1 January 2024 was a Monday
+  for (let i = 0; i < 7; i++) g.append(Object.assign(document.createElement('small'), { textContent: new Date(2024, 0, 1 + i).toLocaleDateString(lang, { weekday: big ? 'short' : 'narrow' }) }));
+  for (let i = (first.getDay() + 6) % 7; i > 0; i--) g.append(document.createElement('span'));
+  for (let d = 1, n = new Date(y, m + 1, 0).getDate(); d <= n; d++) {
+    const day = new Date(y, m, d), k = ymd(day), c = document.createElement('i'), stories = cal[k] ?? [];
+    const flags = Object.keys(cal).filter(x => x.length > 10 && x.startsWith(k)).sort().flatMap(x => cal[x].filter(f => f.trim()).map(f => `${x.slice(11)}:00 ${f}`));
+    const em = (txt, st) => Object.assign(document.createElement('em'), { textContent: txt, className: st ? 'st' : '' });
+    c.textContent = d;
+    c.style.background = HEAT_BG[HEAT[m]];
+    if (k === today) c.className = 'now';
+    if (stories.length || flags.length) c.title = [...stories.map(n => '🎬 ' + n), ...flags.map(f => '⚑ ' + f)].join('\n');
+    if (big) c.append(...stories.map(n => em('🎬 ' + n, 1)), ...flags.map(f => em('⚑ ' + f)));
+    else c.append(...[stories.length && em('🎬 ' + stories.length, 1), flags.length && em('⚑ ' + flags.length)].filter(Boolean));
+    c.onclick = () => zoom('week', day);
+    g.append(c);
+  }
+  return el;
+}
+function zoom(v, d = at) {
+  view = v;
+  at = d;
   drawCal();
-  calendar.showModal();
   const grid = document.getElementById('calGrid');
-  grid.scrollTop = grid.children[8 + 8 * 8].offsetTop - grid.children[1].offsetHeight - 2;
+  // header row + stories row, then 8 cells per hour: scroll to 08:00
+  grid.scrollTop = v === 'week' ? grid.children[16 + 8 * 8].offsetTop - grid.children[1].offsetHeight - 2 : 0;
+}
+document.getElementById('calBtn').onclick = () => {
+  calendar.showModal();
+  zoom('week', new Date());
+  api.list().then(l => { projects = l.map(p => p.name); drawCal(); }).catch(fail);
 };
-document.getElementById('calPrev').onclick = () => { week--; drawCal(); };
-document.getElementById('calNext').onclick = () => { week++; drawCal(); };
-document.getElementById('calToday').onclick = () => { week = 0; drawCal(); };
+const shift = n => { const y = at.getFullYear(), m = at.getMonth(); zoom(view, view === 'week' ? new Date(y, m, at.getDate() + 7 * n) : view === 'month' ? new Date(y, m + n, 1) : new Date(y + n, m, 1)); };
+document.getElementById('calPrev').onclick = () => shift(-1);
+document.getElementById('calNext').onclick = () => shift(1);
+document.getElementById('calToday').onclick = () => zoom(view, new Date());
+document.querySelectorAll('#calViews button').forEach(b => b.onclick = () => zoom(b.dataset.v));
+// Ctrl + wheel zooms the calendar instead of the board behind it; one step per gesture
+calendar.addEventListener('wheel', e => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.timeStamp - wheelAt < 300) return;
+  wheelAt = e.timeStamp;
+  const v = VIEWS[VIEWS.indexOf(view) + Math.sign(e.deltaY)];
+  if (v) zoom(v);
+}, { passive: false });
 const board = document.getElementById('board');
 const links = document.querySelector('#links g');
 
