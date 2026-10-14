@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { deleteProject, listProjects, projectDir, readProject, Scene, writeProject } from './project';
+import { deleteProject, listProjects, projectDir, readCal, readProject, Scene, writeCal, writeProject } from './project';
 
 (async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'storyboard-'));
@@ -18,9 +18,8 @@ import { deleteProject, listProjects, projectDir, readProject, Scene, writeProje
   ];
   const lib = { actors: [{ img: img('png', 'c'), name: 'Ada', text: 'capelli rossi' }], gestures: [{ name: 'saluta', text: '' }] };
   scenes[0] = { ...scenes[0], actors: [0], gestures: [0], does: { 0: 'apre la porta e sorride' } };
-  const cal = { '2026-10-14 09': ['sopralluogo', 'casting'] };
-  await writeProject(dir, scenes, lib, cal);
-  assert.deepEqual(await readProject(dir), { scenes, lib, cal });
+  await writeProject(dir, scenes, lib);
+  assert.deepEqual(await readProject(dir), { scenes, lib, cal: {} });
   assert.equal((await readdir(path.join(dir, 'images'))).length, 4);
   assert.equal((await readdir(path.join(dir, 'audio'))).length, 2);
   await assert.rejects(writeProject(dir, [{ img: img('png', 'a'), text: '', audio: img('png', 'a') }]));
@@ -39,6 +38,11 @@ import { deleteProject, listProjects, projectDir, readProject, Scene, writeProje
   await writeProject(projectDir(root, 'Schema 2'), scenes.slice(0, 1));
   assert.deepEqual((await listProjects(root)).map(p => [p.name, p.scenes]).sort(), [['Schema 2', 1], ['Spot caffè', 4]]);
   for (const bad of ['', '.', '..', '../x', 'a/b', 'a\\b', 'x.', 'c:', 'CON', 'nul.txt']) assert.throws(() => projectDir(root, bad));
+  assert.deepEqual(await readCal(root), {});
+  const cal = { '2026-10-14 09': ['sopralluogo', 'casting'], '2026-10-14': ['Spot caffè'] };
+  await writeCal(root, cal);
+  assert.deepEqual(await readCal(root), cal);
+  assert.equal((await listProjects(root)).length, 2);
   await deleteProject(root, 'Spot caffè');
   assert.deepEqual((await listProjects(root)).map(p => p.name), ['Schema 2']);
 

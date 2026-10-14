@@ -8,8 +8,15 @@ export type Scene = { img?: string; title?: string; text: string; sound?: string
 // project-wide library (actors, gestures, actions) that scenes point to by index
 export interface Item { img?: string; name: string; text: string }
 export type Lib = Record<string, Item[]>;
-// flags per hour slot ("YYYY-MM-DD HH") and saved project names planned per day ("YYYY-MM-DD")
+// app-wide calendar: flags per hour slot ("YYYY-MM-DD HH") and saved project names planned per day ("YYYY-MM-DD")
 export type Cal = Record<string, string[]>;
+const calFile = (root: string) => path.join(root, 'calendar.json');
+export const readCal = async (root: string): Promise<Cal> => JSON.parse(await fs.readFile(calFile(root), 'utf8').catch(() => '{}'));
+export async function writeCal(root: string, cal: Cal) {
+  await fs.mkdir(root, { recursive: true });
+  await fs.writeFile(calFile(root) + '.tmp', JSON.stringify(cal, null, 2));
+  await fs.rename(calFile(root) + '.tmp', calFile(root));
+}
 
 const extOf: Record<string, string> = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp', 'svg+xml': 'svg', bmp: 'bmp', mpeg: 'mp3', wav: 'wav', ogg: 'ogg', flac: 'flac', webm: 'weba', 'x-m4a': 'm4a', mp4: 'm4a' };
 const mimeOf: Record<string, string> = Object.fromEntries(Object.entries(extOf).map(([m, e]) => [e, m]));
@@ -49,7 +56,7 @@ export async function listProjects(root: string) {
 
 export const deleteProject = (root: string, name: string) => fs.rm(projectDir(root, name), { recursive: true });
 
-export async function writeProject(dir: string, scenes: Scene[], lib: Lib = {}, cal: Cal = {}) {
+export async function writeProject(dir: string, scenes: Scene[], lib: Lib = {}) {
   for (const f of Object.values(folder)) await fs.mkdir(path.join(dir, f), { recursive: true });
   const out = [];
   for (const s of scenes) out.push({ image: s.img ? await store(dir, s.img, 'image') : undefined, title: s.title || undefined, text: s.text, sound: s.sound, audio: s.audio ? await store(dir, s.audio, 'audio') : undefined, x: s.x, y: s.y, links: s.links, model: s.model, does: s.does && Object.keys(s.does).length ? s.does : undefined, ...Object.fromEntries(lists.filter(f => s[f]?.length).map(f => [f, s[f]])) });
@@ -59,7 +66,7 @@ export async function writeProject(dir: string, scenes: Scene[], lib: Lib = {}, 
     for (const x of items) outLib[k].push({ image: x.img ? await store(dir, x.img, 'image') : undefined, name: x.name, text: x.text });
   }
   const json = path.join(dir, 'project.json');
-  await fs.writeFile(json + '.tmp', JSON.stringify({ version: 1, scenes: out, lib: outLib, cal }, null, 2));
+  await fs.writeFile(json + '.tmp', JSON.stringify({ version: 1, scenes: out, lib: outLib }, null, 2));
   await fs.rename(json + '.tmp', json);
   const keep = new Set([...out.flatMap(s => [s.image, s.audio]), ...Object.values(outLib).flat().map(x => x.image)].filter(Boolean).map(f => path.basename(f!)));
   for (const f of Object.values(folder)) for (const n of await fs.readdir(path.join(dir, f))) if (own.test(n) && !keep.has(n)) await fs.unlink(path.join(dir, f, n));

@@ -430,6 +430,12 @@ const pad2 = n => String(n).padStart(2, '0');
 const HEAT = [0, 0, 2, 2, 3, 2, 2, 1, 4, 4, 5, 5], HEAT_BG = ['#1b2a3d', '#1e2833', '#23242a', '#33242a', '#47222a', '#5e1b20'];
 const ymd = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const calOut = () => Object.fromEntries(Object.entries(cal).map(([k, v]) => [k, v.filter(x => x.trim())]).filter(([, v]) => v.length));
+// the calendar is one for the whole app, saved on its own in the archive a moment after each change; writes run one at a time
+let calTimer, calWrite = Promise.resolve();
+const flushCal = () => { clearTimeout(calTimer); calTimer = null; const c = calOut(); calWrite = calWrite.then(() => api.calSet(c)).catch(fail); };
+const saveCal = () => { clearTimeout(calTimer); calTimer = setTimeout(flushCal, 300); };
+// projects saved before the calendar became global carry their own: merge it in
+const mergeCal = c => { for (const [k, v] of Object.entries(c ?? {})) cal[k] = [...new Set([...(cal[k] ?? []), ...v])]; if (Object.keys(c ?? {}).length) saveCal(); };
 function drawCal() {
   // redrawing empties the grid, which would reset the scroll to midnight
   const grid = document.getElementById('calGrid'), now = new Date(), top = grid.scrollTop;
@@ -452,11 +458,11 @@ function drawCal() {
     cell.style.background = HEAT_BG[HEAT[d.getMonth()]];
     (cal[k] ?? []).forEach((n, j) => {
       const b = Object.assign(document.createElement('button'), { textContent: `🎬 ${n} ✕`, title: t('del') });
-      b.onclick = () => { cal[k].splice(j, 1); if (!cal[k].length) delete cal[k]; dirty = true; drawCal(); };
+      b.onclick = () => { cal[k].splice(j, 1); if (!cal[k].length) delete cal[k]; saveCal(); drawCal(); };
       cell.append(b);
     });
     sel.append(new Option(t('addStory'), ''), ...projects.filter(n => !cal[k]?.includes(n)).map(n => new Option(n, n)));
-    sel.onchange = () => { (cal[k] ??= []).push(sel.value); dirty = true; drawCal(); };
+    sel.onchange = () => { (cal[k] ??= []).push(sel.value); saveCal(); drawCal(); };
     cell.append(sel);
     grid.append(cell);
   }
@@ -471,11 +477,11 @@ function drawCal() {
         f.innerHTML = `<input><button title="${t('del')}">✕</button>`;
         const [inp, x] = f.children;
         inp.value = inp.title = txt;
-        inp.oninput = () => { cal[key][j] = inp.title = inp.value; dirty = true; };
-        x.onclick = () => { cal[key].splice(j, 1); if (!cal[key].length) delete cal[key]; dirty = true; drawCal(); };
+        inp.oninput = () => { cal[key][j] = inp.title = inp.value; saveCal(); };
+        x.onclick = () => { cal[key].splice(j, 1); if (!cal[key].length) delete cal[key]; saveCal(); drawCal(); };
         cell.append(f);
       });
-      cell.onclick = e => { if (e.target !== cell) return; (cal[key] ??= []).push(''); dirty = true; drawCal(); grid.querySelector(`[data-k="${key}"] .flag:last-child input`).focus(); };
+      cell.onclick = e => { if (e.target !== cell) return; (cal[key] ??= []).push(''); drawCal(); grid.querySelector(`[data-k="${key}"] .flag:last-child input`).focus(); };
       cell.dataset.k = key;
       cell.style.background = HEAT_BG[HEAT[d.getMonth()]];
       grid.append(cell);
@@ -749,7 +755,7 @@ const setCurrent = n => {
 const nameEl = document.getElementById('name');
 const saveBtn = document.getElementById('save');
 const discard = () => !dirty || confirm(t('unsaved'));
-const load = ({ scenes: s, lib: l = {}, cal: c = {} }) => { scenes = fromFile(s); cal = c; lib = Object.fromEntries(LIBS.map(f => [f, l[f] ?? []])); sel = null; picked.clear(); dirty = false; render(); drawLib(); };
+const load = ({ scenes: s, lib: l = {}, cal: c }) => { scenes = fromFile(s); mergeCal(c); lib = Object.fromEntries(LIBS.map(f => [f, l[f] ?? []])); sel = null; picked.clear(); dirty = false; render(); drawLib(); };
 
 saveBtn.onclick = async () => {
   const name = nameEl.value.trim();
@@ -757,7 +763,7 @@ saveBtn.onclick = async () => {
   try {
     const same = n => n.toLowerCase() === name.toLowerCase();
     if (!same(current) && (await api.list()).some(p => same(p.name)) && !confirm(t('exists', name))) return;
-    await api.save(name, toFile(), lib, calOut());
+    await api.save(name, toFile(), lib);
     setCurrent(nameEl.value = name);
     dirty = false;
     saveBtn.textContent = t('saved');
@@ -810,7 +816,7 @@ function preparePrint() {
   return { w, h, undo: () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); board.style.zoom = scale; drawLinks(); } };
 }
 
-const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, scenes: toFile(), lib, cal: calOut() });
+const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, scenes: toFile(), lib });
 document.getElementById('exp').onclick = () => api.exportFile(nameEl.value.trim() || current, payload()).catch(fail);
 
 document.getElementById('pdf').onclick = () => {
@@ -843,5 +849,6 @@ ondrop = async e => {
 
 document.getElementById('lang').onchange = e => { lang = e.target.value; try { localStorage.lang = lang; } catch {} applyLang(); };
 applyLang();
-onbeforeunload = () => dirty ? true : undefined;
+api.calGet().then(c => { cal = { ...c, ...cal }; if (calendar.open) drawCal(); }).catch(fail);
+onbeforeunload = () => { if (calTimer) flushCal(); return dirty ? true : undefined; };
 </script>

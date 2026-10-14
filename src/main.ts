@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { Cal, deleteProject, Lib, listProjects, projectDir, readProject, Scene, writeProject } from './project';
+import { Cal, deleteProject, Lib, listProjects, projectDir, readCal, readProject, Scene, writeCal, writeProject } from './project';
 
 let win: BrowserWindow;
 const M: Record<string, { unsaved: string; leave: string; cancel: string; file: string }> = {
@@ -25,10 +25,12 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => app.quit());
 
 ipcMain.handle('list', () => listProjects(archive()));
-ipcMain.handle('save', (_e, name: string, scenes: Scene[], lib: Lib, cal: Cal) => writeProject(projectDir(archive(), name), scenes, lib, cal));
+ipcMain.handle('save', (_e, name: string, scenes: Scene[], lib: Lib) => writeProject(projectDir(archive(), name), scenes, lib));
 ipcMain.handle('load', (_e, name: string) => readProject(projectDir(archive(), name)));
 ipcMain.handle('remove', (_e, name: string) => deleteProject(archive(), name));
 ipcMain.handle('folder', () => archive());
+ipcMain.handle('calGet', () => readCal(archive()));
+ipcMain.handle('calSet', (_e, cal: Cal) => writeCal(archive(), cal));
 ipcMain.on('lang', (_e, l: string) => { m = M[l] ?? M.it; });
 
 ipcMain.handle('export', async (_e, name: string, project: string) => {
