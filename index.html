@@ -35,10 +35,11 @@
   button, label { background: #383c48; color: #f2f2f2; border: 1px solid #5a5f6c; padding: 5px 12px; cursor: pointer; border-radius: 8px; }
   button:hover, label:hover { background: #454a58; border-color: #4af; }
   #save { background: #1f4f7a; border-color: #4af; }
-  #new { background: #2f7a3a; border-color: #6fcf7f; color: #fff; font-weight: 700; }
+  #new { background: #2f7a3a; border-color: #6fcf7f; color: #fff; font-weight: 700; font-size: 16px; padding: 7px 20px; }
   #new:hover { background: #3a9147; }
-  #calendar [data-i=close] { background: #8a2a2a; border-color: #ff6b6b; color: #fff; font-weight: 700; }
-  #calendar [data-i=close]:hover { background: #a83434; }
+  .dlgHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  dialog [data-i=close] { background: #8a2a2a; border-color: #ff6b6b; color: #fff; font-weight: 700; font-size: 16px; padding: 7px 20px; }
+  dialog [data-i=close]:hover { background: #a83434; }
   input[type=file] { display: none; }
   dialog { background: #24272e; color: #eee; border: 1px solid #444; min-width: 480px; border-radius: 14px; padding: 18px; }
   dialog::backdrop { background: #0008; }
@@ -156,7 +157,7 @@
   <span id="cur"></span>
   <select id="lang"><option value="it">IT</option><option value="en">EN</option><option value="es">ES</option></select>
 </header>
-<dialog id="archive"><b data-i="archTitle"></b><div><small id="where"></small></div><div id="list"></div><button onclick="archive.close()" data-i="close"></button></dialog>
+<dialog id="archive"><div class="dlgHead"><b data-i="archTitle"></b><button onclick="archive.close()" data-i="close"></button></div><div><small id="where"></small></div><div id="list"></div></dialog>
 <dialog id="calendar"><div><button id="calPrev">◀</button><button id="calToday" data-i="today"></button><button id="calNext">▶</button><b id="calWeek"></b><span id="calViews"><button data-v="week" data-i="vWeek"></button> <button data-v="month" data-i="vMonth"></button> <button data-v="year" data-i="vYear"></button></span><button onclick="calendar.close()" data-i="close"></button></div><div id="calBody"><aside id="calSide"><b data-i="stories"></b><small data-i="dragHint"></small><div></div><button id="calClear" data-i="clearStories"></button></aside><div id="calGrid"></div></div><div id="calLegend"></div></dialog>
 <details id="lib" open><summary data-i="lib"></summary><div></div></details>
 <details id="story" open><summary></summary><div></div></details>
@@ -172,7 +173,7 @@ const L = {
     sndPh: 'Genere, atmosfera, effetti sonori...', attach: 'Allega traccia', rmTrack: 'Rimuovi traccia', linkHint: "Trascina su un'altra scena per collegarla",
     doesPh: n => `Cosa fa ${n} in questa scena...`, v3d: '3D sul piano', v3dHint: 'Trascina per ruotare', g3: 'Attori', g4: 'Gesti', g5: 'Azioni', lib: 'Attori, gesti e azioni', itemName: 'Nome', itemDesc: 'Descrizione: aspetto, abiti, come si muove...', itemImg: 'Immagine', addEl: '+ Aggiungi', g0: 'Elementi narrativi', g1: 'Archetipi', g2: 'Esperienza dello spettatore', todo: 'Struttura della storia', missing: n => `manca nelle scene ${n}`, done: 'Storia coerente e comprensibile ✓',
     unsaved: 'Ci sono modifiche non salvate. Continuare?', needName: 'Scrivi il nome del progetto.', exists: n => `"${n}" esiste già nell'archivio. Sovrascrivere?`,
-    empty: 'Nessun progetto salvato.', del: 'Elimina', count: n => `${n} ${n === 1 ? 'scena' : 'scene'}`, delAsk: n => `Eliminare definitivamente "${n}"?`,
+    empty: 'Nessun progetto salvato.', del: 'Elimina', count: n => `${n} ${n === 1 ? 'scena' : 'scene'}`, delAsk: n => `Eliminare definitivamente "${n}"?`, delAsk2: n => `Sei sicuro? "${n}" verrà cancellato con tutte le sue immagini e non si potrà recuperare.`,
     noScenes: 'Nessuna scena da esportare.', badName: n => `Nome non valido: "${n}"`, badImage: 'Immagine non valida', badAudio: 'Audio non valido',
     oldPdf: "Questo PDF è stato esportato con una versione precedente e contiene solo il disegno, non i dati del progetto. Scegli il progetto dall'archivio e riesportalo.",
     story: [
@@ -219,7 +220,7 @@ const L = {
     sndPh: 'Genre, mood, sound effects...', attach: 'Attach track', rmTrack: 'Remove track', linkHint: 'Drag onto another scene to link it',
     doesPh: n => `What ${n} does in this scene...`, v3d: '3D on board', v3dHint: 'Drag to rotate', g3: 'Actors', g4: 'Gestures', g5: 'Actions', lib: 'Actors, gestures and actions', itemName: 'Name', itemDesc: 'Description: look, clothes, how they move...', itemImg: 'Image', addEl: '+ Add', g0: 'Story elements', g1: 'Archetypes', g2: 'Audience experience', todo: 'Story structure', missing: n => `missing in scenes ${n}`, done: 'Coherent and understandable story ✓',
     unsaved: 'There are unsaved changes. Continue?', needName: 'Enter the project name.', exists: n => `"${n}" already exists in the archive. Overwrite?`,
-    empty: 'No saved projects.', del: 'Delete', count: n => `${n} ${n === 1 ? 'scene' : 'scenes'}`, delAsk: n => `Permanently delete "${n}"?`,
+    empty: 'No saved projects.', del: 'Delete', count: n => `${n} ${n === 1 ? 'scene' : 'scenes'}`, delAsk: n => `Permanently delete "${n}"?`, delAsk2: n => `Are you sure? "${n}" will be erased with all its images and cannot be recovered.`,
     noScenes: 'No scenes to export.', badName: n => `Invalid name: "${n}"`, badImage: 'Invalid image', badAudio: 'Invalid audio',
     oldPdf: 'This PDF was exported with an older version and only contains the drawing, not the project data. Pick the project from the archive and export it again.',
     story: [
@@ -266,7 +267,7 @@ const L = {
     sndPh: 'Género, ambiente, efectos de sonido...', attach: 'Adjuntar pista', rmTrack: 'Quitar pista', linkHint: 'Arrastra sobre otra escena para conectarla',
     doesPh: n => `Qué hace ${n} en esta escena...`, v3d: '3D en el tablero', v3dHint: 'Arrastra para girar', g3: 'Actores', g4: 'Gestos', g5: 'Acciones', lib: 'Actores, gestos y acciones', itemName: 'Nombre', itemDesc: 'Descripción: aspecto, ropa, cómo se mueve...', itemImg: 'Imagen', addEl: '+ Añadir', g0: 'Elementos narrativos', g1: 'Arquetipos', g2: 'Experiencia del espectador', todo: 'Estructura de la historia', missing: n => `falta en las escenas ${n}`, done: 'Historia coherente y comprensible ✓',
     unsaved: 'Hay cambios sin guardar. ¿Continuar?', needName: 'Escribe el nombre del proyecto.', exists: n => `"${n}" ya existe en el archivo. ¿Sobrescribir?`,
-    empty: 'No hay proyectos guardados.', del: 'Eliminar', count: n => `${n} ${n === 1 ? 'escena' : 'escenas'}`, delAsk: n => `¿Eliminar definitivamente "${n}"?`,
+    empty: 'No hay proyectos guardados.', del: 'Eliminar', count: n => `${n} ${n === 1 ? 'escena' : 'escenas'}`, delAsk: n => `¿Eliminar definitivamente "${n}"?`, delAsk2: n => `¿Estás seguro? "${n}" se borrará con todas sus imágenes y no se podrá recuperar.`,
     noScenes: 'No hay escenas para exportar.', badName: n => `Nombre no válido: "${n}"`, badImage: 'Imagen no válida', badAudio: 'Audio no válido',
     oldPdf: 'Este PDF se exportó con una versión anterior y solo contiene el dibujo, no los datos del proyecto. Elige el proyecto en el archivo y vuelve a exportarlo.',
     story: [
@@ -832,7 +833,7 @@ async function showArchive() {
     info.textContent = `${t('count', p.scenes)} · ${new Date(p.date).toLocaleString(lang)}`;
     open.onclick = () => { if (discard()) api.load(p.name).then(s => { load(s); setCurrent(nameEl.value = p.name); archive.close(); }).catch(fail); };
     del.onclick = () => {
-      if (!confirm(t('delAsk', p.name))) return;
+      if (!confirm(t('delAsk', p.name)) || !confirm(t('delAsk2', p.name))) return;
       api.remove(p.name).then(() => { if (p.name === current) { setCurrent(''); dirty = true; } showArchive(); }).catch(fail);
     };
     list.append(row);
