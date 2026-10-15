@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, Tray } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Cal, deleteProject, Lib, listProjects, projectDir, readCal, readProject, Scene, writeCal, writeProject } from './project';
@@ -14,27 +14,40 @@ let m = M.it;
 
 const archive = () => path.join(app.isPackaged ? path.dirname(process.env.APPIMAGE ?? process.execPath) : app.getAppPath(), 'archivio');
 
+// one copy only, otherwise the Slack bot would answer twice
+if (!app.requestSingleInstanceLock()) app.quit();
+app.on('second-instance', () => { win?.show(); win?.focus(); });
+
 app.whenReady().then(() => {
-  win = new BrowserWindow({ width: 1400, height: 900, autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js') } });
+  win = new BrowserWindow({ width: 1400, height: 900, autoHideMenuBar: true, show: !process.argv.includes('--hidden'), webPreferences: { preload: path.join(__dirname, 'preload.js') } });
   win.webContents.on('will-prevent-unload', e => {
     const choice = dialog.showMessageBoxSync(win, { type: 'warning', message: m.unsaved, buttons: [m.leave, m.cancel], defaultId: 1, cancelId: 1 });
-    if (choice === 0) e.preventDefault();
+    if (choice === 0) e.preventDefault(); else quitting = false;
   });
+  // with the bot on, closing the window only hides it: the bot keeps answering from the tray
+  win.on('close', e => { if (tray && !quitting) { e.preventDefault(); win.hide(); } });
   win.loadFile(path.join(__dirname, '..', 'index.html'));
-  readToken(app.getPath('userData'), b => safeStorage.decryptString(b)).then(t => { if (t) stopBot = startBot(archive(), t); });
+  readToken(app.getPath('userData'), b => safeStorage.decryptString(b)).then(bot);
 });
 
-// Slack bot "Xi Jinping": runs while the app is open, token kept encrypted by the OS
-let stopBot = () => {};
+// Slack bot "Xi Jinping": runs in the tray and starts with Windows while a token is set, token kept encrypted by the OS
+let stopBot = () => {}, tray: Tray | null = null, quitting = false;
+async function bot(token: string) {
+  stopBot();
+  stopBot = token ? startBot(archive(), token) : () => {};
+  app.setLoginItemSettings({ openAtLogin: !!token, path: process.execPath, args: [...(app.isPackaged ? [] : [app.getAppPath()]), '--hidden'] });
+  if (!token) { tray?.destroy(); tray = null; return; }
+  if (!tray) { tray = new Tray(await app.getFileIcon(process.execPath)); tray.on('click', () => win.show()); }
+  tray.setToolTip('Storyboard · Xi Jinping');
+  tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Storyboard', click: () => win.show() }, { label: 'Esci', click: () => { quitting = true; win.close(); } }]));
+}
 ipcMain.handle('slackOn', () => fs.access(tokenFile(app.getPath('userData'))).then(() => true, () => false));
 ipcMain.handle('slackSet', async (_e, token: string) => {
   const file = tokenFile(app.getPath('userData'));
-  stopBot();
-  stopBot = () => {};
-  if (!token) return fs.rm(file, { force: true });
+  if (!token) { await fs.rm(file, { force: true }); return bot(''); }
   await check(token);
   await fs.writeFile(file, safeStorage.encryptString(token));
-  stopBot = startBot(archive(), token);
+  await bot(token);
 });
 
 app.on('window-all-closed', () => app.quit());
