@@ -27,7 +27,8 @@ export function report(cal: Cal, projects: string[], now: Date) {
     ...(flags.length ? ['', '🚩 *Flag*', ...flags] : [])].join('\n');
 }
 
-export const wantsReport = (text: string) => { const t = text.toLowerCase().replace(/\s+/g, ' '); return t.includes('xi jinping') && t.includes('che punto'); };
+// "Xi Jinping a che punto siamo" written out, or with an @mention (arrives as <@BOTID>)
+export const wantsReport = (text: string, me = '') => { const t = text.toLowerCase().replace(/\s+/g, ' '); return t.includes('che punto') && (t.includes('xi jinping') || (!!me && text.includes(`<@${me}>`))); };
 
 export async function slack(token: string, method: string, params: Record<string, string>) {
   const r = await fetch(`https://slack.com/api/${method}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: new URLSearchParams(params) });
@@ -43,12 +44,13 @@ export const check = (token: string) => slack(token, 'conversations.history', { 
 export function startBot(root: string, token: string, api = slack) {
   let last = String(Date.now() / 1000), stop = false;
   (async () => {
+    const me = await api(token, 'auth.test', {}).then(r => r.user_id as string, () => '');
     while (!stop) {
       try {
         const { messages } = await api(token, 'conversations.history', { channel: CHANNEL, oldest: last, limit: '50' });
         for (const msg of [...messages].reverse()) {
           if (+msg.ts > +last) last = msg.ts;
-          if (!msg.bot_id && !msg.subtype && wantsReport(msg.text ?? '')) {
+          if (!msg.bot_id && !msg.subtype && wantsReport(msg.text ?? '', me)) {
             const projects = (await listProjects(root)).map(p => p.name);
             await api(token, 'chat.postMessage', { channel: CHANNEL, text: report(await readCal(root), projects, new Date()) });
           }
