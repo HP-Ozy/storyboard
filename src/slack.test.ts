@@ -26,10 +26,20 @@ import { NUDGE, report, startBot, wantsReport } from './slack';
     if (method === 'auth.test') return { user_id: 'UBOT' };
     if (method === 'chat.postMessage') { sent.push(p.text); return { ok: true }; }
     return { messages: polls++ ? [] : [{ ts: '9e9', text: 'Xi Jinping a che punto siamo?' }, { ts: '9e9', bot_id: 'B', text: 'Xi Jinping a che punto' }, { ts: '9e9', text: 'ciao' }, { ts: '9e9', text: '<@UBOT> a che punto siamo?' }] };
-  });
+  }, () => new Date(2026, 0, 1, 10));
   await new Promise(r => setTimeout(r, 200));
   stop();
   assert.deepEqual(sent, [NUDGE, NUDGE]);
+
+  // at 08:00 the report goes out on its own, once per slot
+  const auto: string[] = [];
+  const stop2 = startBot(root, 'x', async (_t, method, p) => {
+    if (method === 'chat.postMessage') { auto.push(p.text); return { ok: true }; }
+    return { messages: [] };
+  }, () => new Date(2026, 0, 1, 8, 0));
+  await new Promise(r => setTimeout(r, 200));
+  stop2();
+  assert.deepEqual(auto, [NUDGE]);
   console.log('slack ok');
   process.exit(0);
 })();

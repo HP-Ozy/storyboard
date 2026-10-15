@@ -5,7 +5,8 @@ import { Cal, listProjects, readCal } from './project';
 // shortcut: one fixed channel (#product-yours-ideasss), make it a setting if the bot goes to other teams
 export const CHANNEL = 'C0BTTHRNU9J';
 
-export const NUDGE = '⚠️ *Compagni, il calendario è vuoto.* Nessun contenuto fissato.\nOgnuno risponda qui: *su cosa state lavorando?* Se non state lavorando a niente, ditelo.';
+export const HOURS = [8, 12, 19]; // daily automatic reports
+export const NUDGE = '⚠️ *Compagni, il calendario è vuoto!* Al lavoro, ve lo ordina Xi il panda 🐼\nOgnuno risponda qui: *su cosa state lavorando?* Se non state lavorando a niente, ditelo.';
 
 const day = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:00`;
 
@@ -41,8 +42,9 @@ export async function slack(token: string, method: string, params: Record<string
 export const check = (token: string) => slack(token, 'conversations.history', { channel: CHANNEL, limit: '1' });
 
 // shortcut: polls every 5 s (Tier 3 ~50/min); move to Socket Mode if Slack rate-limits it
-export function startBot(root: string, token: string, api = slack) {
-  let last = String(Date.now() / 1000), stop = false;
+export function startBot(root: string, token: string, api = slack, clock = () => new Date()) {
+  let last = String(Date.now() / 1000), stop = false, sentSlot = '';
+  const post = async () => api(token, 'chat.postMessage', { channel: CHANNEL, text: report(await readCal(root), (await listProjects(root)).map(p => p.name), clock()) });
   (async () => {
     const me = await api(token, 'auth.test', {}).then(r => r.user_id as string, () => '');
     while (!stop) {
@@ -50,11 +52,11 @@ export function startBot(root: string, token: string, api = slack) {
         const { messages } = await api(token, 'conversations.history', { channel: CHANNEL, oldest: last, limit: '50' });
         for (const msg of [...messages].reverse()) {
           if (+msg.ts > +last) last = msg.ts;
-          if (!msg.bot_id && !msg.subtype && wantsReport(msg.text ?? '', me)) {
-            const projects = (await listProjects(root)).map(p => p.name);
-            await api(token, 'chat.postMessage', { channel: CHANNEL, text: report(await readCal(root), projects, new Date()) });
-          }
+          if (!msg.bot_id && !msg.subtype && wantsReport(msg.text ?? '', me)) await post();
         }
+        // shortcut: restarting the app during 08/12/19 posts that hour's report again; store sentSlot on disk if it annoys
+        const now = clock(), slot = `${now.toDateString()} ${now.getHours()}`;
+        if (HOURS.includes(now.getHours()) && slot !== sentSlot) { await post(); sentSlot = slot; } // marked only once sent, so a network blip retries
       } catch (e) { console.error('slack:', e); } // network blips must not kill the bot
       await new Promise(r => setTimeout(r, 5000));
     }
