@@ -7,7 +7,7 @@
   "main": "out/main.js",
   "scripts": {
     "start": "tsc && electron .",
-    "test": "tsc && node out/project.test.js",
+    "test": "tsc && node out/project.test.js && node out/slack.test.js",
     "dist": "tsc && electron-builder"
   },
   "build": {

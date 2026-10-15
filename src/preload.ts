@@ -10,5 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   folder: () => ipcRenderer.invoke('folder'),
   exportFile: (name: string, project: string) => ipcRenderer.invoke('export', name, project),
   lang: (l: string) => ipcRenderer.send('lang', l),
+  slackOn: () => ipcRenderer.invoke('slackOn'),
+  slackSet: (token: string) => ipcRenderer.invoke('slackSet', token),
   pdf: (w: number, h: number, project: string) => ipcRenderer.invoke('pdf', w, h, project),
 });

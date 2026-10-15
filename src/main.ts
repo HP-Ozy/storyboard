@@ -1,7 +1,8 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { Cal, deleteProject, Lib, listProjects, projectDir, readCal, readProject, Scene, writeCal, writeProject } from './project';
+import { check, readToken, startBot, tokenFile } from './slack';
 
 let win: BrowserWindow;
 const M: Record<string, { unsaved: string; leave: string; cancel: string; file: string }> = {
@@ -20,6 +21,20 @@ app.whenReady().then(() => {
     if (choice === 0) e.preventDefault();
   });
   win.loadFile(path.join(__dirname, '..', 'index.html'));
+  readToken(app.getPath('userData'), b => safeStorage.decryptString(b)).then(t => { if (t) stopBot = startBot(archive(), t); });
+});
+
+// Slack bot "Xi Jinping": runs while the app is open, token kept encrypted by the OS
+let stopBot = () => {};
+ipcMain.handle('slackOn', () => fs.access(tokenFile(app.getPath('userData'))).then(() => true, () => false));
+ipcMain.handle('slackSet', async (_e, token: string) => {
+  const file = tokenFile(app.getPath('userData'));
+  stopBot();
+  stopBot = () => {};
+  if (!token) return fs.rm(file, { force: true });
+  await check(token);
+  await fs.writeFile(file, safeStorage.encryptString(token));
+  stopBot = startBot(archive(), token);
 });
 
 app.on('window-all-closed', () => app.quit());
