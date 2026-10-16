@@ -38,12 +38,18 @@ Il risultato finisce nella cartella `release/`:
 | Spostare più scene insieme | **Ctrl + clic** su ognuna (bordo blu), poi trascinane una; clic sul piano vuoto per deselezionare |
 | Rimettere in ordine le scene sparse | **Allinea**: griglia di 5 per riga, nell'ordine dei numeri delle scene |
 | Scrivere un commento | scrivi nel riquadro sotto l'immagine |
+| Scrivere dialoghi e voce fuori campo | riquadro giallo sotto il commento |
+| Dare una durata alla scena | campo **⏱ secondi**: il totale del video compare nel pannello a destra |
 | Cambiare il numero della scena | **◀ ▶** |
 | Eliminare una scena | **✕** sotto la scena |
 
-### Attori, gesti e azioni
+### Creative Brief
 
-Il pannello in basso a sinistra raccoglie gli elementi che si ripetono in tutto il progetto.
+In cima al pannello in basso a destra: **Obiettivo, Pubblico, Messaggio, Stile** del video. Diventa verde quando sono compilati tutti e quattro, si salva col progetto e finisce nel PDF come nota a sinistra delle scene.
+
+### Attori, gesti, azioni e ambienti
+
+Il pannello in basso a sinistra raccoglie gli elementi che si ripetono in tutto il progetto (gli **Ambienti** sono i luoghi: descrizione e immagine di riferimento, per la continuità).
 
 | Cosa vuoi fare | Come |
 |---|---|

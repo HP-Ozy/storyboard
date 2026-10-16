@@ -78,6 +78,15 @@
   .story button.g3 { background: #1f2c38; border-color: #36597a; color: #cfe6ff; }
   .story button.g4 { background: #38232c; border-color: #7a3656; color: #ffd0e4; }
   .story button.g5 { background: #2c3320; border-color: #66783a; color: #e8f3c0; }
+  .story button.g6 { background: #1f3330; border-color: #3a7870; color: #c0f3ea; }
+  .beat { display: flex; align-items: center; gap: 6px; color: #aaa; }
+  .beat input { width: 80px; background: #1b1d22; color: #e6e6e6; border: 1px solid #4a4e57; border-radius: 6px; padding: 3px 6px; font: inherit; }
+  .scene .dlg { min-height: 40px; border-color: #7a6536; }
+  #brief .bf { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+  #brief textarea { min-height: 34px; resize: vertical; background: #1b1d22; color: #e6e6e6; border: 1px solid #4a4e57; border-radius: 6px; padding: 4px; font: inherit; }
+  .scene.brief div { white-space: pre-wrap; }
+  .scene .lbl { color: #9aa3b5; font-size: 12px; font-weight: 600; margin-bottom: -2px; }
+  #story small.hint, #lib small.hint { display: block; margin: 4px 0; color: #9aa3b5; }
   #story, #lib { position: fixed; bottom: 12px; z-index: 2; width: 270px; padding: 8px 12px; background: #2a2d35f2; border: 1px solid #464a55; border-top: 3px solid #a98bff; border-radius: 14px; box-shadow: 0 4px 16px #0008; backdrop-filter: blur(6px); }
   #lib { left: 12px; }
   #lib summary { cursor: pointer; font-weight: 600; color: #cdbdff; }
@@ -138,6 +147,8 @@
     .sound:has(.snd:placeholder-shown):not(:has(audio[src])) { display: none; }
     .sound:has(audio[src])::after { content: attr(data-att); font-style: italic; }
     .scene textarea { background: #fff; color: #000; resize: none; overflow: hidden; }
+    .scene .dlg:placeholder-shown, .beat:has(.dur:placeholder-shown), .scene .lbl { display: none; }
+    .beat, .beat input { color: #000; background: #fff; border-color: transparent; }
     .scene .title, .scene .title::placeholder { color: #000; border-color: transparent; }
     #board { transform-origin: 0 0; width: var(--w); height: var(--h); transform: translate(var(--tx), var(--ty)); }
     #links { overflow: visible; }
@@ -162,7 +173,7 @@
 <dialog id="bot"><div class="dlgHead"><b>🤖 Xi Jinping · Slack</b><button onclick="bot.close()" data-i="close"></button></div><p><small data-i="botHelp"></small></p><p><b id="botState"></b></p><input id="botToken" type="password" placeholder="xoxb-..." aria-label="Slack bot token" style="width:100%"><p><button id="botSave" data-i="connect"></button> <button id="botOff" data-i="disconnect"></button></p></dialog>
 <dialog id="calendar"><div><button id="calPrev">◀</button><button id="calToday" data-i="today"></button><button id="calNext">▶</button><b id="calWeek"></b><span id="calViews"><button data-v="week" data-i="vWeek"></button> <button data-v="month" data-i="vMonth"></button> <button data-v="year" data-i="vYear"></button></span><button onclick="calendar.close()" data-i="close"></button></div><div id="calBody"><aside id="calSide"><b data-i="stories"></b><small data-i="dragHint"></small><div></div><button id="calClear" data-i="clearStories"></button></aside><div id="calGrid"></div></div><div id="calLegend"></div></dialog>
 <details id="lib" open><summary data-i="lib"></summary><div></div></details>
-<details id="story" open><summary></summary><div></div></details>
+<details id="story" open><summary></summary><div><details id="brief" open></details><div id="checks"></div></div></details>
 <div id="board">
   <svg id="links"><defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888"/></marker></defs><g></g></svg>
 </div>
@@ -174,7 +185,7 @@ const L = {
     newCur: 'Nuovo progetto · non salvato', working: n => `Stai lavorando su: ${n}`, archTitle: 'Archivio progetti', close: 'Chiudi',
     drop: 'Rilascia il file per aprire il progetto', att: 'Traccia musicale allegata', delLink: 'Elimina freccia', scene: i => `Scena ${i}`, comment: 'Commento...',
     sndPh: 'Genere, atmosfera, effetti sonori...', attach: 'Allega traccia', rmTrack: 'Rimuovi traccia', linkHint: "Trascina su un'altra scena per collegarla",
-    doesPh: n => `Cosa fa ${n} in questa scena...`, v3d: '3D sul piano', v3dHint: 'Trascina per ruotare', g3: 'Attori', g4: 'Gesti', g5: 'Azioni', lib: 'Attori, gesti e azioni', itemName: 'Nome', itemDesc: 'Descrizione: aspetto, abiti, come si muove...', itemImg: 'Immagine', addEl: '+ Aggiungi', g0: 'Elementi narrativi', g1: 'Archetipi', g2: 'Esperienza dello spettatore', todo: 'Struttura della storia', missing: n => `manca nelle scene ${n}`, done: 'Storia coerente e comprensibile ✓',
+    doesPh: n => `Cosa fa ${n} in questa scena...`, v3d: '3D sul piano', v3dHint: 'Trascina per ruotare', g3: 'Attori', g4: 'Gesti', g5: 'Azioni', g6: 'Ambienti', lib: 'Attori, gesti, azioni e ambienti', brief: '1. Creative Brief', bf: [['Obiettivo', 'Cosa deve ottenere il video?'], ['Pubblico', 'A chi parla?'], ['Messaggio', 'Cosa deve ricordare chi guarda?'], ['Stile', 'Tono, look, riferimenti...']], dlgPh: 'Dialoghi e voce fuori campo...', durPh: 'secondi', lblText: 'Cosa succede nella scena', lblDlg: 'Dialoghi', lblDur: 'Durata', lblTags: 'Attori, ambienti, emozioni della scena', addTag: '+ Aggiungi attore, ambiente, emozione...', briefHint: 'Vale per tutto il progetto: non va attaccato a nessuna scena. Si salva con Salva e finisce da solo nel PDF.', libHint: 'Crealo qui, poi mettilo in una scena dal menu "+ Aggiungi attore, ambiente..." sotto la scena.', itemName: 'Nome', itemDesc: 'Descrizione: aspetto, abiti, come si muove...', itemImg: 'Immagine', addEl: '+ Aggiungi', g0: 'Elementi narrativi', g1: 'Archetipi', g2: 'Esperienza dello spettatore', todo: 'Struttura della storia', missing: n => `manca nelle scene ${n}`, done: 'Storia coerente e comprensibile ✓',
     unsaved: 'Ci sono modifiche non salvate. Continuare?', needName: 'Scrivi il nome del progetto.', exists: n => `"${n}" esiste già nell'archivio. Sovrascrivere?`,
     empty: 'Nessun progetto salvato.', del: 'Elimina', count: n => `${n} ${n === 1 ? 'scena' : 'scene'}`, delAsk: n => `Eliminare definitivamente "${n}"?`, delAsk2: n => `Sei sicuro? "${n}" verrà cancellato con tutte le sue immagini e non si potrà recuperare.`,
     noScenes: 'Nessuna scena da esportare.', badName: n => `Nome non valido: "${n}"`, badImage: 'Immagine non valida', badAudio: 'Audio non valido',
@@ -222,7 +233,7 @@ const L = {
     newCur: 'New project · not saved', working: n => `Working on: ${n}`, archTitle: 'Project archive', close: 'Close',
     drop: 'Drop the file to open the project', att: 'Music track attached', delLink: 'Delete arrow', scene: i => `Scene ${i}`, comment: 'Comment...',
     sndPh: 'Genre, mood, sound effects...', attach: 'Attach track', rmTrack: 'Remove track', linkHint: 'Drag onto another scene to link it',
-    doesPh: n => `What ${n} does in this scene...`, v3d: '3D on board', v3dHint: 'Drag to rotate', g3: 'Actors', g4: 'Gestures', g5: 'Actions', lib: 'Actors, gestures and actions', itemName: 'Name', itemDesc: 'Description: look, clothes, how they move...', itemImg: 'Image', addEl: '+ Add', g0: 'Story elements', g1: 'Archetypes', g2: 'Audience experience', todo: 'Story structure', missing: n => `missing in scenes ${n}`, done: 'Coherent and understandable story ✓',
+    doesPh: n => `What ${n} does in this scene...`, v3d: '3D on board', v3dHint: 'Drag to rotate', g3: 'Actors', g4: 'Gestures', g5: 'Actions', g6: 'Locations', lib: 'Actors, gestures, actions and locations', brief: '1. Creative Brief', bf: [['Goal', 'What must the video achieve?'], ['Audience', 'Who is it for?'], ['Message', 'What should viewers remember?'], ['Style', 'Tone, look, references...']], dlgPh: 'Dialogue and voice-over...', durPh: 'seconds', lblText: 'What happens in the scene', lblDlg: 'Dialogue', lblDur: 'Duration', lblTags: 'Actors, locations, emotions of the scene', addTag: '+ Add actor, location, emotion...', briefHint: 'Applies to the whole project: no need to attach it to a scene. It is saved with Save and goes into the PDF by itself.', libHint: 'Create it here, then put it in a scene from the "+ Add actor, location..." menu under the scene.', itemName: 'Name', itemDesc: 'Description: look, clothes, how they move...', itemImg: 'Image', addEl: '+ Add', g0: 'Story elements', g1: 'Archetypes', g2: 'Audience experience', todo: 'Story structure', missing: n => `missing in scenes ${n}`, done: 'Coherent and understandable story ✓',
     unsaved: 'There are unsaved changes. Continue?', needName: 'Enter the project name.', exists: n => `"${n}" already exists in the archive. Overwrite?`,
     empty: 'No saved projects.', del: 'Delete', count: n => `${n} ${n === 1 ? 'scene' : 'scenes'}`, delAsk: n => `Permanently delete "${n}"?`, delAsk2: n => `Are you sure? "${n}" will be erased with all its images and cannot be recovered.`,
     noScenes: 'No scenes to export.', badName: n => `Invalid name: "${n}"`, badImage: 'Invalid image', badAudio: 'Invalid audio',
@@ -270,7 +281,7 @@ const L = {
     newCur: 'Proyecto nuevo · sin guardar', working: n => `Trabajando en: ${n}`, archTitle: 'Archivo de proyectos', close: 'Cerrar',
     drop: 'Suelta el archivo para abrir el proyecto', att: 'Pista musical adjunta', delLink: 'Eliminar flecha', scene: i => `Escena ${i}`, comment: 'Comentario...',
     sndPh: 'Género, ambiente, efectos de sonido...', attach: 'Adjuntar pista', rmTrack: 'Quitar pista', linkHint: 'Arrastra sobre otra escena para conectarla',
-    doesPh: n => `Qué hace ${n} en esta escena...`, v3d: '3D en el tablero', v3dHint: 'Arrastra para girar', g3: 'Actores', g4: 'Gestos', g5: 'Acciones', lib: 'Actores, gestos y acciones', itemName: 'Nombre', itemDesc: 'Descripción: aspecto, ropa, cómo se mueve...', itemImg: 'Imagen', addEl: '+ Añadir', g0: 'Elementos narrativos', g1: 'Arquetipos', g2: 'Experiencia del espectador', todo: 'Estructura de la historia', missing: n => `falta en las escenas ${n}`, done: 'Historia coherente y comprensible ✓',
+    doesPh: n => `Qué hace ${n} en esta escena...`, v3d: '3D en el tablero', v3dHint: 'Arrastra para girar', g3: 'Actores', g4: 'Gestos', g5: 'Acciones', g6: 'Ambientes', lib: 'Actores, gestos, acciones y ambientes', brief: '1. Creative Brief', bf: [['Objetivo', '¿Qué debe lograr el vídeo?'], ['Público', '¿A quién se dirige?'], ['Mensaje', '¿Qué debe recordar quien mira?'], ['Estilo', 'Tono, look, referencias...']], dlgPh: 'Diálogos y voz en off...', durPh: 'segundos', lblText: 'Qué pasa en la escena', lblDlg: 'Diálogos', lblDur: 'Duración', lblTags: 'Actores, ambientes, emociones de la escena', addTag: '+ Añadir actor, ambiente, emoción...', briefHint: 'Vale para todo el proyecto: no hay que pegarlo a ninguna escena. Se guarda con Guardar y va solo al PDF.', libHint: 'Créalo aquí y luego ponlo en una escena desde el menú "+ Añadir actor, ambiente..." bajo la escena.', itemName: 'Nombre', itemDesc: 'Descripción: aspecto, ropa, cómo se mueve...', itemImg: 'Imagen', addEl: '+ Añadir', g0: 'Elementos narrativos', g1: 'Arquetipos', g2: 'Experiencia del espectador', todo: 'Estructura de la historia', missing: n => `falta en las escenas ${n}`, done: 'Historia coherente y comprensible ✓',
     unsaved: 'Hay cambios sin guardar. ¿Continuar?', needName: 'Escribe el nombre del proyecto.', exists: n => `"${n}" ya existe en el archivo. ¿Sobrescribir?`,
     empty: 'No hay proyectos guardados.', del: 'Eliminar', count: n => `${n} ${n === 1 ? 'escena' : 'escenas'}`, delAsk: n => `¿Eliminar definitivamente "${n}"?`, delAsk2: n => `¿Estás seguro? "${n}" se borrará con todas sus imágenes y no se podrá recuperar.`,
     noScenes: 'No hay escenas para exportar.', badName: n => `Nombre no válido: "${n}"`, badImage: 'Imagen no válida', badAudio: 'Audio no válido',
@@ -326,12 +337,13 @@ function applyLang() {
   setCurrent(current);
   render();
   drawLib();
+  drawBrief();
   if (calendar.open) drawCal();
   api.lang(lang);
 }
 const GROUPS = [['tags', 'story', 'all'], ['chars', 'chars', 'scene'], ['feels', 'feels', 'scene']];
 function drawStory() {
-  const panel = document.getElementById('story'), box = panel.querySelector('div');
+  const panel = document.getElementById('story'), box = document.getElementById('checks');
   const open = [...box.querySelectorAll('details')].map(d => d.open);
   let ok = 0;
   box.innerHTML = GROUPS.map(([f, k, rule], g) => {
@@ -345,7 +357,18 @@ function drawStory() {
       items.map(([n, a, b], i) => `<li class="${used.has(i) ? 'ok' : ''}"><b>${n}</b><small>${a} · ${b}</small></li>`).join('') + '</ol></details>';
   }).join('');
   panel.classList.toggle('done', ok === GROUPS.length);
-  panel.querySelector('summary').textContent = ok === GROUPS.length ? t('done') : `${t('todo')} ${ok}/${GROUPS.length}`;
+  const sec = Math.round(scenes.reduce((a, s) => a + (s.dur || 0), 0)), runtime = sec ? ` · ⏱ ${Math.floor(sec / 60)}:${pad2(sec % 60)}` : '';
+  panel.querySelector('summary').textContent = (ok === GROUPS.length ? t('done') : `${t('todo')} ${ok}/${GROUPS.length}`) + runtime;
+}
+// creative brief: one text per field, saved with the project
+const BRIEF = ['goal', 'audience', 'message', 'style'];
+let brief = {};
+function drawBrief() {
+  const d = document.getElementById('brief');
+  d.innerHTML = `<summary>${t('brief')}</summary><small class="hint">${t('briefHint')}</small>` + t('bf').map(([n, ph], i) => `<div class="bf"><b>${n}</b><textarea data-b="${BRIEF[i]}" placeholder="${ph}"></textarea></div>`).join('');
+  const mark = () => d.classList.toggle('done', BRIEF.every(k => brief[k]?.trim()));
+  d.querySelectorAll('textarea').forEach(ta => { ta.value = brief[ta.dataset.b] ?? ''; ta.oninput = () => { brief[ta.dataset.b] = ta.value; dirty = true; mark(); }; });
+  mark();
 }
 
 let scenes = [];
@@ -407,8 +430,8 @@ function model3d(src) {
   im.src = src;
   return stage;
 }
-const LIBS = ['actors', 'gestures', 'actions'];
-let lib = { actors: [], gestures: [], actions: [] };
+const LIBS = ['actors', 'gestures', 'actions', 'places'];
+let lib = { actors: [], gestures: [], actions: [], places: [] };
 const esc = v => v.replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
 function drawLib() {
   const box = document.querySelector('#lib > div'), open = [...box.querySelectorAll('details')].map(d => d.open);
@@ -416,7 +439,7 @@ function drawLib() {
   LIBS.forEach((f, n) => {
     const d = document.createElement('details');
     d.open = open[n] ?? n === 0;
-    d.innerHTML = `<summary>${t('g' + (n + 3))} · ${lib[f].length}</summary><div></div><button>${t('addEl')}</button>`;
+    d.innerHTML = `<summary>${t('g' + (n + 3))} · ${lib[f].length}</summary><div></div>${lib[f].length ? '' : `<small class="hint">${t('libHint')}</small>`}<button>${t('addEl')}</button>`;
     d.querySelector('button').onclick = () => { lib[f].push({ name: '', text: '' }); dirty = true; drawLib(); render(); box.children[n].querySelector('.item:last-child input').focus(); };
     lib[f].forEach((x, j) => {
       const it = document.createElement('div');
@@ -672,8 +695,9 @@ function render() {
     el.style.top = s.y + 'px';
     el.dataset.i = i;
     el.classList.toggle('picked', picked.has(s));
-    el.innerHTML = `<input class="title" placeholder="${t('scene', i + 1)}"><img><textarea placeholder="${t('comment')}"></textarea>
-      <div class="story"></div><div class="does"></div>
+    el.innerHTML = `<input class="title" placeholder="${t('scene', i + 1)}"><img><small class="lbl">${t('lblText')}</small><textarea placeholder="${t('comment')}"></textarea>
+      <small class="lbl">${t('lblDlg')}</small><textarea class="dlg" placeholder="${t('dlgPh')}"></textarea><div class="beat">⏱ ${t('lblDur')} <input class="dur" type="number" min="0" step="0.5" placeholder="${t('durPh')}"> s</div>
+      <small class="lbl">${t('lblTags')}</small><div class="story"></div><div class="does"></div>
       <div class="sound" data-att="${t('att')}"><b>🎵 Audio</b><textarea class="snd" placeholder="${t('sndPh')}"></textarea><audio controls></audio>
         <div><label>${t('attach')}<input type="file" accept="audio/*"></label><button data-r title="${t('rmTrack')}">✕</button></div></div>
       ${['n', 'e', 's', 'w'].map(p => `<i class="port" data-p="${p}" title="${t('linkHint')}"></i>`).join('')}
@@ -687,6 +711,11 @@ function render() {
     const title = el.querySelector('.title');
     title.value = s.title ?? '';
     title.oninput = () => { s.title = title.value; dirty = true; };
+    const dlg = el.querySelector('.dlg'), dur = el.querySelector('.dur');
+    dlg.value = s.dialog ?? '';
+    dlg.oninput = () => { s.dialog = dlg.value; dirty = true; };
+    dur.value = s.dur ?? '';
+    dur.oninput = () => { s.dur = dur.value === '' ? undefined : Math.max(0, +dur.value); dirty = true; drawStory(); };
     if (s.audio) au.src = s.audio;
     au.hidden = rm.hidden = !s.audio;
     el.querySelector('.sound input').onchange = async e => { s.audio = await readAs(e.target.files[0], 'readAsDataURL'); dirty = true; render(); };
@@ -695,7 +724,7 @@ function render() {
     chips.forEach(([f]) => s[f] ??= []);
     const story = el.querySelector('.story');
     story.innerHTML = chips.map(([f, items], g) => s[f].map(i => `<button class="g${g}" data-f="${f}" data-k="${i}" title="${items[i].slice(1).join(' · ')}">${items[i][0]}</button>`).join('')).join('') +
-      `<select><option value="">${t('addEl')}</option>${chips.map(([f, items], g) => `<optgroup label="${t('g' + g)}">${items.map(([n], i) => s[f].includes(i) ? '' : `<option value="${f}:${i}">${n}</option>`).join('')}</optgroup>`).join('')}</select>`;
+      `<select><option value="">${t('addTag')}</option>${chips.map(([f, items], g) => `<optgroup label="${t('g' + g)}">${items.map(([n], i) => s[f].includes(i) ? '' : `<option value="${f}:${i}">${n}</option>`).join('')}</optgroup>`).join('')}</select>`;
     story.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { const f = b.dataset.f; s[f] = s[f].filter(i => i !== +b.dataset.k); if (f === 'actors') delete s.does?.[b.dataset.k]; dirty = true; render(); });
     // one text per actor in the scene: what that actor does here
     s.actors.forEach(a => {
@@ -814,7 +843,7 @@ const setCurrent = n => {
 const nameEl = document.getElementById('name');
 const saveBtn = document.getElementById('save');
 const discard = () => !dirty || confirm(t('unsaved'));
-const load = ({ scenes: s, lib: l = {}, cal: c }) => { scenes = fromFile(s); mergeCal(c); lib = Object.fromEntries(LIBS.map(f => [f, l[f] ?? []])); sel = null; picked.clear(); dirty = false; render(); drawLib(); };
+const load = ({ scenes: s, lib: l = {}, cal: c, brief: b = {} }) => { scenes = fromFile(s); mergeCal(c); lib = Object.fromEntries(LIBS.map(f => [f, l[f] ?? []])); brief = { ...b }; sel = null; picked.clear(); dirty = false; render(); drawLib(); drawBrief(); };
 
 saveBtn.onclick = async () => {
   const name = nameEl.value.trim();
@@ -822,7 +851,7 @@ saveBtn.onclick = async () => {
   try {
     const same = n => n.toLowerCase() === name.toLowerCase();
     if (!same(current) && (await api.list()).some(p => same(p.name)) && !confirm(t('exists', name))) return;
-    await api.save(name, toFile(), lib);
+    await api.save(name, toFile(), lib, brief);
     setCurrent(nameEl.value = name);
     dirty = false;
     saveBtn.textContent = t('saved');
@@ -861,6 +890,15 @@ function preparePrint() {
   board.style.zoom = '';
   const els = [...board.querySelectorAll('.scene')];
   if (!els.length) return null;
+  const filled = BRIEF.filter(k => brief[k]?.trim()), note = document.createElement('div');
+  if (filled.length) {
+    note.className = 'scene note brief';
+    note.style.left = Math.min(...els.map(e => e.offsetLeft)) - 300 + 'px';
+    note.style.top = Math.min(...els.map(e => e.offsetTop)) + 'px';
+    note.innerHTML = `<b>${t('brief')}</b>` + filled.map(k => `<div><b>${t('bf')[BRIEF.indexOf(k)][0]}:</b> ${esc(brief[k])}</div>`).join('');
+    board.append(note);
+    els.push(note);
+  }
   const tas = [...board.querySelectorAll('textarea')];
   const hs = tas.map(t => t.style.height);
   tas.forEach(t => t.style.height = t.scrollHeight + 'px');
@@ -872,10 +910,10 @@ function preparePrint() {
   const h = Math.ceil(Math.max(...els.map(e => e.offsetTop + e.offsetHeight)) - y0 + pad);
   const vars = { '--w': w + 'px', '--h': h + 'px', '--tx': -x0 + 'px', '--ty': -y0 + 'px' };
   for (const v in vars) board.style.setProperty(v, vars[v]);
-  return { w, h, undo: () => { tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); board.style.zoom = scale; drawLinks(); } };
+  return { w, h, undo: () => { note.remove(); tas.forEach((t, i) => t.style.height = hs[i]); board.removeAttribute('style'); board.style.zoom = scale; drawLinks(); } };
 }
 
-const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, scenes: toFile(), lib });
+const payload = () => JSON.stringify({ name: nameEl.value.trim() || current, brief, scenes: toFile(), lib });
 document.getElementById('exp').onclick = () => api.exportFile(nameEl.value.trim() || current, payload()).catch(fail);
 
 document.getElementById('pdf').onclick = () => {

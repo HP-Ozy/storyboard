@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
   list: () => ipcRenderer.invoke('list'),
-  save: (name: string, scenes: unknown, lib: unknown) => ipcRenderer.invoke('save', name, scenes, lib),
+  save: (name: string, scenes: unknown, lib: unknown, brief: unknown) => ipcRenderer.invoke('save', name, scenes, lib, brief),
   calGet: () => ipcRenderer.invoke('calGet'),
   calSet: (cal: unknown) => ipcRenderer.invoke('calSet', cal),
   load: (name: string) => ipcRenderer.invoke('load', name),
