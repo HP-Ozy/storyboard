@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, Tray } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { Cal, deleteProject, Lib, listProjects, projectDir, readCal, readProject, Scene, writeCal, writeProject } from './project';
+import { Brief, Cal, deleteProject, Lib, listProjects, projectDir, readCal, readProject, Scene, writeCal, writeProject } from './project';
 import { check, readToken, startBot, tokenFile } from './slack';
 
 let win: BrowserWindow;
@@ -53,7 +53,7 @@ ipcMain.handle('slackSet', async (_e, token: string) => {
 app.on('window-all-closed', () => app.quit());
 
 ipcMain.handle('list', () => listProjects(archive()));
-ipcMain.handle('save', (_e, name: string, scenes: Scene[], lib: Lib) => writeProject(projectDir(archive(), name), scenes, lib));
+ipcMain.handle('save', (_e, name: string, scenes: Scene[], lib: Lib, brief: Brief) => writeProject(projectDir(archive(), name), scenes, lib, brief));
 ipcMain.handle('load', (_e, name: string) => readProject(projectDir(archive(), name)));
 ipcMain.handle('remove', (_e, name: string) => deleteProject(archive(), name));
 ipcMain.handle('folder', () => archive());
