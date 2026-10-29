@@ -8,6 +8,7 @@ import { NUDGE, report, startBot, wantsReport } from './slack';
   const now = new Date(2026, 0, 1, 12, 30);
   assert.equal(report({}, ['A'], now), NUDGE);
   assert.equal(report({ 's 2025-01-01 10': ['old'] }, ['old'], now), NUDGE);
+  assert.equal(report({ ch: ['yt:PYD'], 'p 2026-01-02 10': ['yt:PYD'] }, [], now), NUDGE);
   const r = report({ 's 2026-01-02 10': ['A'], '2026-01-03 08': ['flag'], 's 2026-01-01 12': ['now'] }, ['A', 'B', 'now'], now);
   assert.match(r, /01\/01 12:00 — now/);
   assert.match(r, /02\/01 10:00 — A/);

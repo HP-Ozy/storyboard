@@ -108,6 +108,11 @@
   .chip:hover { transform: translateY(-1px); box-shadow: 0 4px 10px #0008; }
   .chip.lift { opacity: .35; }
   .chip button { margin-left: auto; padding: 0 4px; border: 0; background: transparent; }
+  .chip.yt, .mon em.yt { background: #3a1f22; border-color: #b8434c; color: #ffd6d9; }
+  .chip.ig, .mon em.ig { background: #35203a; border-color: #b25aa6; color: #fbd6f4; }
+  .chip.tt, .mon em.tt { background: #1c3236; border-color: #3fb0ba; color: #cdf7fb; }
+  #chForm { display: flex; flex-direction: column; gap: 4px; }
+  #chForm select, #chForm input { background: #1b1d22; color: #eee; border: 1px solid #5a5f6c; padding: 4px 6px; border-radius: 6px; }
   #calendar .over { box-shadow: inset 0 0 0 2px #4af; }
   .mon > b { display: block; margin-bottom: 4px; text-transform: capitalize; }
   .mon > div { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
@@ -160,7 +165,7 @@
 </header>
 <dialog id="archive"><div class="dlgHead"><b data-i="archTitle"></b><button onclick="archive.close()" data-i="close"></button></div><div><small id="where"></small></div><div id="list"></div></dialog>
 <dialog id="bot"><div class="dlgHead"><b>🤖 Xi Jinping · Slack</b><button onclick="bot.close()" data-i="close"></button></div><p><small data-i="botHelp"></small></p><p><b id="botState"></b></p><input id="botToken" type="password" placeholder="xoxb-..." aria-label="Slack bot token" style="width:100%"><p><button id="botSave" data-i="connect"></button> <button id="botOff" data-i="disconnect"></button></p></dialog>
-<dialog id="calendar"><div><button id="calPrev">◀</button><button id="calToday" data-i="today"></button><button id="calNext">▶</button><b id="calWeek"></b><span id="calViews"><button data-v="week" data-i="vWeek"></button> <button data-v="month" data-i="vMonth"></button> <button data-v="year" data-i="vYear"></button></span><button onclick="calendar.close()" data-i="close"></button></div><div id="calBody"><aside id="calSide"><b data-i="stories"></b><small data-i="dragHint"></small><div></div><button id="calClear" data-i="clearStories"></button></aside><div id="calGrid"></div></div><div id="calLegend"></div></dialog>
+<dialog id="calendar"><div><button id="calPrev">◀</button><button id="calToday" data-i="today"></button><button id="calNext">▶</button><b id="calWeek"></b><span id="calViews"><button data-v="week" data-i="vWeek"></button> <button data-v="month" data-i="vMonth"></button> <button data-v="year" data-i="vYear"></button></span><button onclick="calendar.close()" data-i="close"></button></div><div id="calBody"><aside id="calSide"><b data-i="stories"></b><small data-i="dragHint"></small><div></div><button id="calClear" data-i="clearStories"></button><b data-i="channels"></b><small data-i="chHint"></small><div id="calCh"></div><form id="chForm"><select id="chP"><option value="yt">▶ YouTube</option><option value="ig">📸 Instagram</option><option value="tt">🎵 TikTok</option></select><input id="chName" data-ip="chName" required><button data-i="addEl"></button></form></aside><div id="calGrid"></div></div><div id="calLegend"></div></dialog>
 <details id="lib" open><summary data-i="lib"></summary><div></div></details>
 <details id="story" open><summary></summary><div></div></details>
 <div id="board">
@@ -170,7 +175,7 @@
 const L = {
   it: {
     botHelp: 'Il bot risponde in #product-yours-ideasss a "Xi Jinping a che punto siamo?" anche a finestra chiusa (resta vicino all\'orologio e parte con Windows; serve il PC acceso). Incolla il token del bot (xoxb-), serve /invite @Xi Jinping nel canale.', botOn: 'Collegato ✓', botOffState: 'Non collegato', connect: 'Collega', disconnect: 'Scollega',
-    images: '+ Immagini', text: '+ Testo', align: 'Allinea', alignAsk: 'Rimettere le scene in griglia secondo il loro numero? La disposizione attuale andrà persa.', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA', cal: 'Calendario', today: 'Oggi', calHint: 'Clic per aggiungere un flag', heat: ['Basso', 'Medio-basso', 'Medio', 'Medio-alto', 'Alto', 'Molto alto'], heatOf: l => `Potenziale di monetizzazione: ${l}`, vWeek: 'Settimana', vMonth: 'Mese', vYear: 'Anno', stories: 'Story salvate', clearStories: 'Togli tutte dal calendario', clearAsk: 'Togliere dal calendario tutte le story piazzate? I flag restano.', dragHint: "Trascinale su un giorno e un'ora del calendario", legHeat: 'Sfondo = potenziale di monetizzazione del mese:', legStory: "🎬 story = progetto salvato pianificato: trascinala dall'elenco a sinistra su un'ora (in Mese/Anno va alle 09:00), trascinala di nuovo per spostarla, ✕ per toglierla", legFlag: "⚑ flag = nota in un giorno e un'ora (in Anno il numero dice quanti)", legToday: 'bordo blu = oggi', legHelp: 'Ctrl + rotella o Settimana/Mese/Anno per zoomare · clic su un giorno per aprire la sua settimana · in Settimana clic su una cella vuota per aggiungere un flag, ✕ per toglierlo',
+    images: '+ Immagini', text: '+ Testo', align: 'Allinea', alignAsk: 'Rimettere le scene in griglia secondo il loro numero? La disposizione attuale andrà persa.', name: 'Nome progetto', save: 'Salva', saved: 'Salvato ✓', new: 'Nuovo', arch: 'Archivio', exp: 'Esporta .storyboard', pdf: 'Esporta PDF per IA', cal: 'Calendario', today: 'Oggi', calHint: 'Clic per aggiungere un flag', heat: ['Basso', 'Medio-basso', 'Medio', 'Medio-alto', 'Alto', 'Molto alto'], heatOf: l => `Potenziale di monetizzazione: ${l}`, vWeek: 'Settimana', vMonth: 'Mese', vYear: 'Anno', stories: 'Story salvate', clearStories: 'Togli tutte dal calendario', clearAsk: 'Togliere dal calendario tutte le story piazzate? I flag restano.', dragHint: "Trascinale su un giorno e un'ora del calendario", legHeat: 'Sfondo = potenziale di monetizzazione del mese:', legStory: "🎬 story = progetto salvato pianificato: trascinala dall'elenco a sinistra su un'ora (in Mese/Anno va alle 09:00), trascinala di nuovo per spostarla, ✕ per toglierla", legFlag: "⚑ flag = nota in un giorno e un'ora (in Anno il numero dice quanti)", legToday: 'bordo blu = oggi', channels: 'Canali PYD', chName: 'Nome canale', chHint: "Trascinalo su un giorno e un'ora per pianificare una pubblicazione", chDelAsk: n => `Togliere il canale "${n}" e tutte le sue pubblicazioni dal calendario?`, legPub: '▶ 📸 🎵 pubblicazione = canale trascinato su un\'ora (si può mettere più volte), ✕ per toglierla; il flag nella stessa ora fa da nota', legHelp: 'Ctrl + rotella o Settimana/Mese/Anno per zoomare · clic su un giorno per aprire la sua settimana · in Settimana clic su una cella vuota per aggiungere un flag, ✕ per toglierlo',
     newCur: 'Nuovo progetto · non salvato', working: n => `Stai lavorando su: ${n}`, archTitle: 'Archivio progetti', close: 'Chiudi',
     drop: 'Rilascia il file per aprire il progetto', att: 'Traccia musicale allegata', delLink: 'Elimina freccia', scene: i => `Scena ${i}`, comment: 'Commento...',
     sndPh: 'Genere, atmosfera, effetti sonori...', attach: 'Allega traccia', rmTrack: 'Rimuovi traccia', linkHint: "Trascina su un'altra scena per collegarla",
@@ -218,7 +223,7 @@ const L = {
   },
   en: {
     botHelp: 'The bot answers "Xi Jinping a che punto siamo?" in #product-yours-ideasss even with the window closed (it stays by the clock and starts with Windows; the PC must be on). Paste the bot token (xoxb-); the channel needs /invite @Xi Jinping.', botOn: 'Connected ✓', botOffState: 'Not connected', connect: 'Connect', disconnect: 'Disconnect',
-    images: '+ Images', text: '+ Text', align: 'Align', alignAsk: 'Put the scenes back in a grid by their number? The current layout will be lost.', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI', cal: 'Calendar', today: 'Today', calHint: 'Click to add a flag', heat: ['Low', 'Medium-low', 'Medium', 'Medium-high', 'High', 'Very high'], heatOf: l => `Monetization potential: ${l}`, vWeek: 'Week', vMonth: 'Month', vYear: 'Year', stories: 'Saved stories', clearStories: 'Remove all from calendar', clearAsk: 'Remove all placed stories from the calendar? Flags stay.', dragHint: 'Drag them onto a day and hour of the calendar', legHeat: 'Background = monetization potential of the month:', legStory: '🎬 story = planned saved project: drag it from the list on the left onto an hour (in Month/Year it goes to 09:00), drag it again to move it, ✕ to remove it', legFlag: '⚑ flag = note on a day and hour (in Year the number says how many)', legToday: 'blue border = today', legHelp: 'Ctrl + wheel or Week/Month/Year to zoom · click a day to open its week · in Week click an empty cell to add a flag, ✕ to remove it',
+    images: '+ Images', text: '+ Text', align: 'Align', alignAsk: 'Put the scenes back in a grid by their number? The current layout will be lost.', name: 'Project name', save: 'Save', saved: 'Saved ✓', new: 'New', arch: 'Archive', exp: 'Export .storyboard', pdf: 'Export PDF for AI', cal: 'Calendar', today: 'Today', calHint: 'Click to add a flag', heat: ['Low', 'Medium-low', 'Medium', 'Medium-high', 'High', 'Very high'], heatOf: l => `Monetization potential: ${l}`, vWeek: 'Week', vMonth: 'Month', vYear: 'Year', stories: 'Saved stories', clearStories: 'Remove all from calendar', clearAsk: 'Remove all placed stories from the calendar? Flags stay.', dragHint: 'Drag them onto a day and hour of the calendar', legHeat: 'Background = monetization potential of the month:', legStory: '🎬 story = planned saved project: drag it from the list on the left onto an hour (in Month/Year it goes to 09:00), drag it again to move it, ✕ to remove it', legFlag: '⚑ flag = note on a day and hour (in Year the number says how many)', legToday: 'blue border = today', channels: 'PYD channels', chName: 'Channel name', chHint: 'Drag it onto a day and hour to plan a post', chDelAsk: n => `Remove the channel "${n}" and all its posts from the calendar?`, legPub: '▶ 📸 🎵 post = channel dragged onto an hour (can be placed many times), ✕ to remove it; a flag in the same hour works as a note', legHelp: 'Ctrl + wheel or Week/Month/Year to zoom · click a day to open its week · in Week click an empty cell to add a flag, ✕ to remove it',
     newCur: 'New project · not saved', working: n => `Working on: ${n}`, archTitle: 'Project archive', close: 'Close',
     drop: 'Drop the file to open the project', att: 'Music track attached', delLink: 'Delete arrow', scene: i => `Scene ${i}`, comment: 'Comment...',
     sndPh: 'Genre, mood, sound effects...', attach: 'Attach track', rmTrack: 'Remove track', linkHint: 'Drag onto another scene to link it',
@@ -266,7 +271,7 @@ const L = {
   },
   es: {
     botHelp: 'El bot responde en #product-yours-ideasss a "Xi Jinping a che punto siamo?" aunque la ventana esté cerrada (queda junto al reloj y arranca con Windows; el PC debe estar encendido). Pega el token del bot (xoxb-); el canal necesita /invite @Xi Jinping.', botOn: 'Conectado ✓', botOffState: 'No conectado', connect: 'Conectar', disconnect: 'Desconectar',
-    images: '+ Imágenes', text: '+ Texto', align: 'Alinear', alignAsk: '¿Volver a colocar las escenas en cuadrícula según su número? La disposición actual se perderá.', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA', cal: 'Calendario', today: 'Hoy', calHint: 'Clic para añadir una bandera', heat: ['Bajo', 'Medio-bajo', 'Medio', 'Medio-alto', 'Alto', 'Muy alto'], heatOf: l => `Potencial de monetización: ${l}`, vWeek: 'Semana', vMonth: 'Mes', vYear: 'Año', stories: 'Stories guardadas', clearStories: 'Quitar todas del calendario', clearAsk: '¿Quitar del calendario todas las stories colocadas? Las banderas se quedan.', dragHint: 'Arrástralas a un día y una hora del calendario', legHeat: 'Fondo = potencial de monetización del mes:', legStory: '🎬 story = proyecto guardado planificado: arrástrala desde la lista de la izquierda a una hora (en Mes/Año va a las 09:00), arrástrala otra vez para moverla, ✕ para quitarla', legFlag: '⚑ bandera = nota en un día y una hora (en Año el número indica cuántas)', legToday: 'borde azul = hoy', legHelp: 'Ctrl + rueda o Semana/Mes/Año para hacer zoom · clic en un día para abrir su semana · en Semana clic en una celda vacía para añadir una bandera, ✕ para quitarla',
+    images: '+ Imágenes', text: '+ Texto', align: 'Alinear', alignAsk: '¿Volver a colocar las escenas en cuadrícula según su número? La disposición actual se perderá.', name: 'Nombre del proyecto', save: 'Guardar', saved: 'Guardado ✓', new: 'Nuevo', arch: 'Archivo', exp: 'Exportar .storyboard', pdf: 'Exportar PDF para IA', cal: 'Calendario', today: 'Hoy', calHint: 'Clic para añadir una bandera', heat: ['Bajo', 'Medio-bajo', 'Medio', 'Medio-alto', 'Alto', 'Muy alto'], heatOf: l => `Potencial de monetización: ${l}`, vWeek: 'Semana', vMonth: 'Mes', vYear: 'Año', stories: 'Stories guardadas', clearStories: 'Quitar todas del calendario', clearAsk: '¿Quitar del calendario todas las stories colocadas? Las banderas se quedan.', dragHint: 'Arrástralas a un día y una hora del calendario', legHeat: 'Fondo = potencial de monetización del mes:', legStory: '🎬 story = proyecto guardado planificado: arrástrala desde la lista de la izquierda a una hora (en Mes/Año va a las 09:00), arrástrala otra vez para moverla, ✕ para quitarla', legFlag: '⚑ bandera = nota en un día y una hora (en Año el número indica cuántas)', legToday: 'borde azul = hoy', channels: 'Canales PYD', chName: 'Nombre del canal', chHint: 'Arrástralo a un día y una hora para planificar una publicación', chDelAsk: n => `¿Quitar el canal "${n}" y todas sus publicaciones del calendario?`, legPub: '▶ 📸 🎵 publicación = canal arrastrado a una hora (se puede poner varias veces), ✕ para quitarla; una bandera en la misma hora sirve de nota', legHelp: 'Ctrl + rueda o Semana/Mes/Año para hacer zoom · clic en un día para abrir su semana · en Semana clic en una celda vacía para añadir una bandera, ✕ para quitarla',
     newCur: 'Proyecto nuevo · sin guardar', working: n => `Trabajando en: ${n}`, archTitle: 'Archivo de proyectos', close: 'Cerrar',
     drop: 'Suelta el archivo para abrir el proyecto', att: 'Pista musical adjunta', delLink: 'Eliminar flecha', scene: i => `Escena ${i}`, comment: 'Comentario...',
     sndPh: 'Género, ambiente, efectos de sonido...', attach: 'Adjuntar pista', rmTrack: 'Quitar pista', linkHint: 'Arrastra sobre otra escena para conectarla',
@@ -457,11 +462,15 @@ const saveCal = () => { clearTimeout(calTimer); calTimer = setTimeout(flushCal, 
 const fixCal = c => Object.fromEntries(Object.entries(c ?? {}).map(([k, v]) => [k.length === 10 ? `s ${k} 09` : k, v]));
 const mergeCal = c => { for (const [k, v] of Object.entries(fixCal(c))) cal[k] = [...new Set([...(cal[k] ?? []), ...v])]; if (Object.keys(c ?? {}).length) saveCal(); };
 let dragging = null;
+// channels live in the calendar under "ch" as "yt:Name"; a post is a channel placed at "p YYYY-MM-DD HH"
+const PLAT = { yt: '▶', ig: '📸', tt: '🎵' };
+const chLabel = v => `${PLAT[v.slice(0, 2)] ?? ''} ${v.slice(3)}`;
 const unplace = (k, j) => { cal[k].splice(j, 1); if (!cal[k].length) delete cal[k]; };
 // a story you can pick up: from the side list (no slot) or already placed in slot `from`
-function chip(name, from, j) {
-  const c = Object.assign(document.createElement('div'), { className: 'chip', draggable: true, textContent: '🎬 ' + name, title: t('dragHint') });
-  c.ondragstart = e => { dragging = { name, from, j }; e.dataTransfer.setData('text/plain', name); requestAnimationFrame(() => c.classList.add('lift')); };
+function chip(name, from, j, pre = 's ') {
+  const pub = pre === 'p ';
+  const c = Object.assign(document.createElement('div'), { className: pub ? 'chip ' + name.slice(0, 2) : 'chip', draggable: true, textContent: pub ? chLabel(name) : '🎬 ' + name, title: t(pub ? 'chHint' : 'dragHint') });
+  c.ondragstart = e => { dragging = { name, from, j, pre }; e.dataTransfer.setData('text/plain', name); requestAnimationFrame(() => c.classList.add('lift')); };
   c.ondragend = () => { dragging = null; c.classList.remove('lift'); };
   if (from) {
     const x = Object.assign(document.createElement('button'), { textContent: '✕', title: t('del') });
@@ -478,7 +487,7 @@ function dropZone(el, slot) {
     if (!dragging) return;
     e.preventDefault();
     e.stopPropagation();
-    const { name, from, j } = dragging, k = 's ' + slot;
+    const { name, from, j, pre } = dragging, k = pre + slot;
     dragging = null;
     if (from) unplace(from, j);
     if (!cal[k]?.includes(name)) (cal[k] ??= []).push(name);
@@ -490,13 +499,26 @@ function drawCal() {
   // a story planned anywhere leaves the list; removing it with ✕ brings it back
   const placed = new Set(Object.keys(cal).filter(k => k.startsWith('s ')).flatMap(k => cal[k]));
   document.querySelector('#calSide > div').replaceChildren(...projects.filter(n => !placed.has(n)).map(n => chip(n)));
+  document.getElementById('calCh').replaceChildren(...(cal.ch ?? []).map(v => {
+    const c = chip(v, undefined, undefined, 'p ');
+    const x = Object.assign(document.createElement('button'), { textContent: '✕', title: t('del') });
+    x.onclick = () => {
+      if (!confirm(t('chDelAsk', v.slice(3)))) return;
+      unplace('ch', cal.ch.indexOf(v));
+      for (const k of Object.keys(cal).filter(k => k.startsWith('p '))) { cal[k] = cal[k].filter(n => n !== v); if (!cal[k].length) delete cal[k]; }
+      saveCal();
+      drawCal();
+    };
+    c.append(x);
+    return c;
+  }));
   // redrawing empties the grid, which would reset the scroll to midnight
   const grid = document.getElementById('calGrid'), now = new Date(), top = grid.scrollTop;
   const days = [...Array(7)].map((_, i) => new Date(at.getFullYear(), at.getMonth(), at.getDate() - (at.getDay() + 6) % 7 + i));
   const fmt = (d, o) => d.toLocaleDateString(lang, o);
   grid.className = view;
   document.querySelectorAll('#calViews button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
-  document.getElementById('calLegend').innerHTML = `<span>${t('legHeat')}</span>${t('heat').map((l, i) => `<span><i style="background: ${HEAT_BG[i]}"></i>${l}</span>`).join('')}<span>${t('legStory')}</span><span>${t('legFlag')}</span><span>${t('legToday')}</span><span>${t('legHelp')}</span>`;
+  document.getElementById('calLegend').innerHTML = `<span>${t('legHeat')}</span>${t('heat').map((l, i) => `<span><i style="background: ${HEAT_BG[i]}"></i>${l}</span>`).join('')}<span>${t('legStory')}</span><span>${t('legPub')}</span><span>${t('legFlag')}</span><span>${t('legToday')}</span><span>${t('legHelp')}</span>`;
   if (view !== 'week') {
     document.getElementById('calWeek').textContent = view === 'month' ? fmt(at, { month: 'long', year: 'numeric' }) : at.getFullYear();
     grid.replaceChildren(...(view === 'month' ? [monthBlock(at.getFullYear(), at.getMonth(), true)] : [...Array(12)].map((_, m) => monthBlock(at.getFullYear(), m))));
@@ -510,6 +532,7 @@ function drawCal() {
       const key = `${ymd(d)} ${pad2(h)}`, cell = document.createElement('div');
       cell.title = t('calHint');
       (cal['s ' + key] ?? []).forEach((n, j) => cell.append(chip(n, 's ' + key, j)));
+      (cal['p ' + key] ?? []).forEach((n, j) => cell.append(chip(n, 'p ' + key, j, 'p ')));
       dropZone(cell, key);
       (cal[key] ?? []).forEach((txt, j) => {
         const f = document.createElement('div');
@@ -544,13 +567,14 @@ function monthBlock(y, m, big) {
     const day = new Date(y, m, d), k = ymd(day), c = document.createElement('i');
     const stories = Object.keys(cal).filter(x => x.startsWith(`s ${k}`)).sort().flatMap(x => cal[x].map(n => `${x.slice(13)}:00 ${n}`));
     const flags = Object.keys(cal).filter(x => x.length > 10 && x.startsWith(k)).sort().flatMap(x => cal[x].filter(f => f.trim()).map(f => `${x.slice(11)}:00 ${f}`));
-    const em = (txt, st) => Object.assign(document.createElement('em'), { textContent: txt, className: st ? 'st' : '' });
+    const pubs = Object.keys(cal).filter(x => x.startsWith(`p ${k}`)).sort().flatMap(x => cal[x].map(v => [v.slice(0, 2), `${x.slice(13)}:00 ${chLabel(v)}`]));
+    const em = (txt, st) => Object.assign(document.createElement('em'), { textContent: txt, className: st === 1 ? 'st' : st || '' });
     c.textContent = d;
     c.style.background = HEAT_BG[HEAT[m]];
     if (k === today) c.className = 'now';
-    if (stories.length || flags.length) c.title = [...stories.map(n => '🎬 ' + n), ...flags.map(f => '⚑ ' + f)].join('\n');
-    if (big) c.append(...stories.map(n => em('🎬 ' + n, 1)), ...flags.map(f => em('⚑ ' + f)));
-    else c.append(...[stories.length && em('🎬 ' + stories.length, 1), flags.length && em('⚑ ' + flags.length)].filter(Boolean));
+    if (stories.length || flags.length || pubs.length) c.title = [...stories.map(n => '🎬 ' + n), ...pubs.map(p => p[1]), ...flags.map(f => '⚑ ' + f)].join('\n');
+    if (big) c.append(...stories.map(n => em('🎬 ' + n, 1)), ...pubs.map(([p, txt]) => em(txt, p)), ...flags.map(f => em('⚑ ' + f)));
+    else c.append(...[stories.length && em('🎬 ' + stories.length, 1), ...Object.keys(PLAT).map(p => { const n = pubs.filter(x => x[0] === p).length; return n && em(`${PLAT[p]} ${n}`, p); }), flags.length && em('⚑ ' + flags.length)].filter(Boolean));
     c.onclick = () => zoom('week', day);
     dropZone(c, `${k} 09`);
     g.append(c);
@@ -575,6 +599,15 @@ document.getElementById('calClear').onclick = () => {
   const placed = Object.keys(cal).filter(k => k.startsWith('s '));
   if (!placed.length || !confirm(t('clearAsk'))) return;
   placed.forEach(k => delete cal[k]);
+  saveCal();
+  drawCal();
+};
+document.getElementById('chForm').onsubmit = e => {
+  e.preventDefault();
+  const v = `${chP.value}:${chName.value.trim()}`;
+  if (!chName.value.trim() || cal.ch?.includes(v)) return;
+  (cal.ch ??= []).push(v);
+  chName.value = '';
   saveCal();
   drawCal();
 };

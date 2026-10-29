@@ -85,6 +85,10 @@ I progetti stanno nella cartella `archivio/`, una sottocartella per progetto. Il
 
 Ogni progetto è una cartella normale (`project.json` + `images/`): puoi copiarla su un altro computer, anche da Windows a Linux, e metterla nella sua cartella `archivio/`.
 
+### Canali PYD nel Calendario
+
+Nel **Calendario**, colonna a sinistra, sezione **Canali PYD**: scegli la piattaforma (YouTube, Instagram, TikTok), scrivi il nome del canale e premi **+ Aggiungi**. Trascina il canale su un giorno e un'ora per pianificare una pubblicazione: lo stesso canale si può mettere quante volte vuoi, e ogni piattaforma ha il suo colore. Per scrivere cosa esce, aggiungi un flag nella stessa ora. Con ✕ sulla pubblicazione la togli; con ✕ sul canale lo elimini insieme a tutte le sue pubblicazioni. Serve solo a vedere il piano: l'app non si collega ai social.
+
 ### 4. Esportare per l'IA
 
 **Esporta PDF per IA** → scegli dove salvare. Il PDF contiene tutte le scene nelle loro posizioni, con frecce e commenti. Caricalo nella chat dell'IA.
